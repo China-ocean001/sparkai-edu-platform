@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkAI · AI 导演课 · 教师端</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111;
+  --muted:  #666;
+  --border: #EBEBEB;
+  --pink:   #FFD6E8;
+  --danger: #E05A5A;
+  --bg:     #F7F8FA;
+}
+body { font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--dark); display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:220px; flex-shrink:0;
+  background:white; border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; bottom:0; z-index:50;
+}
+.sb-logo { padding:28px 24px 24px; font-size:20px; font-weight:900;
+  letter-spacing:-.5px; border-bottom:1px solid var(--border); }
+.sb-logo em { font-style:normal; color:var(--cyan); }
+.sb-section { padding:20px 12px 8px; font-size:11px; font-weight:700;
+  color:#AAA; letter-spacing:1px; text-transform:uppercase; }
+.sb-nav { flex:1; padding:8px 12px; display:flex; flex-direction:column; gap:2px; }
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  font-size:14px; font-weight:600; color:var(--muted);
+  text-decoration:none; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.sb-item:hover { background:#F0FAFB; color:var(--dark); }
+.sb-item.active { background:rgba(182,237,255,.5); color:var(--cyan); font-weight:700; }
+.sb-item .icon {
+  width:34px; height:34px; border-radius:9px;
+  background:#F0F0F0;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:background .15s, color .15s;
+}
+.sb-item.active .icon { background:var(--dark); color:white; }
+.sb-item:hover:not(.active) .icon { background:#E0F8FB; color:var(--cyan); }
+.sb-foot { padding:16px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:10px; }
+.sb-avatar { width:36px; height:36px; border-radius:50%; background:var(--cyan); color:white;
+  display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; }
+.sb-uname { font-size:13px; font-weight:700; }
+.sb-role  { font-size:11px; color:#AAA; }
+
+/* ── MAIN ── */
+.main { margin-left:220px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+/* 顶部面包屑 */
+.topbar {
+  background:white; border-bottom:1px solid var(--border);
+  padding:0 36px; height:52px;
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; color:var(--muted); flex-shrink:0;
+}
+.topbar a { color:var(--muted); text-decoration:none; }
+.topbar a:hover { color:var(--cyan); }
+.topbar .sep { opacity:.4; }
+.topbar .current { color:var(--dark); font-weight:700; }
+
+/* ── CONTENT ── */
+.content { flex:1; display:grid; grid-template-columns:1fr 380px; gap:0; min-height:0; }
+
+/* PPT 区 */
+.ppt-area {
+  padding:28px 28px 24px 36px;
+  display:flex; flex-direction:column; gap:14px; min-height:0;
+  position:relative;
+}
+.ppt-header {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-shrink:0;
+}
+.ppt-header-left { display:flex; align-items:baseline; gap:10px; }
+.ppt-title  { font-size:20px; font-weight:900; }
+.ppt-count  { font-size:13px; color:var(--muted); font-weight:600; }
+.ppt-header-right { display:flex; align-items:center; gap:8px; }
+
+/* 全屏演示按钮 */
+.ppt-fs-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 16px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:12px; font-weight:700; cursor:pointer; color:var(--dark);
+  transition:border-color .15s, color .15s;
+}
+.ppt-fs-btn:hover { border-color:var(--dark); background:#F7F7F7; }
+
+/* 主幻灯片 */
+.ppt-slide {
+  flex:1; min-height:0;
+  background:white; border-radius:20px;
+  border:1px solid var(--border);
+  display:flex; flex-direction:column;
+  align-items:stretch; justify-content:stretch;
+  position:relative; overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.06);
+}
+.slide-inner {
+  width:100%; height:100%; padding:40px 52px;
+  display:flex; flex-direction:column; justify-content:center;
+  position:relative;
+}
+.slide-deco {
+  position:absolute; right:32px; top:32px;
+  font-size:72px; opacity:.12; pointer-events:none;
+  line-height:1;
+}
+.s-tag {
+  display:inline-block; background:var(--blue);
+  color:#007a8c; font-size:11px; font-weight:700;
+  padding:4px 12px; border-radius:50px; margin-bottom:20px;
+  letter-spacing:.5px; width:fit-content;
+}
+.s-tag.pink { background:#FFD6E8; color:#a03060; }
+.slide-inner h2 { font-size:28px; font-weight:900; margin-bottom:14px; line-height:1.2; }
+.slide-inner .slide-body { font-size:15px; color:var(--muted); line-height:1.7; max-width:520px; }
+.slide-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
+.chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:50px;
+  background:var(--bg); border:1px solid var(--border);
+  font-size:12px; font-weight:700; color:var(--dark);
+}
+.slide-code {
+  margin-top:22px; background:#F7F8FA; border-radius:12px;
+  padding:14px 18px; font-family:monospace; font-size:13px; color:#333;
+  border:1px solid #E8E8E8; max-width:480px; line-height:1.7;
+}
+.slide-code .kw { color:#00BFCF; font-weight:700; }
+.slide-code .fn { color:#9B7FE8; }
+.slide-code .cm { color:#AAA; }
+
+/* 翻页控制 */
+.ppt-controls {
+  display:flex; align-items:center; justify-content:center; gap:16px;
+  flex-shrink:0;
+}
+.ppt-btn {
+  width:40px; height:40px; border-radius:50%;
+  border:1.5px solid var(--border); background:white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; cursor:pointer; color:var(--dark);
+  transition:border-color .15s, background .15s;
+}
+.ppt-btn:hover { border-color:var(--cyan); background:rgba(182,237,255,.3); }
+.ppt-btn:disabled { opacity:.3; cursor:default; }
+.ppt-counter { font-size:14px; font-weight:700; color:var(--muted); min-width:60px; text-align:center; }
+
+/* 缩略图条 */
+.thumbs { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; flex-shrink:0; }
+.thumbs::-webkit-scrollbar { height:3px; }
+.thumbs::-webkit-scrollbar-thumb { background:#EEE; border-radius:50px; }
+.thumb {
+  flex-shrink:0; width:80px; height:52px; border-radius:8px;
+  border:2px solid transparent; cursor:pointer;
+  overflow:hidden; background:#F0F0F0;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .15s;
+}
+.thumb.active { border-color:var(--cyan); }
+.thumb-inner {
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700; color:#AAA;
+  line-height:1.2; text-align:center; padding:4px;
+}
+
+/* ── 右侧面板：6步魔法工坊 ── */
+.magic-mobile-bar { display:none; }
+
+.side-panel {
+  border-left:1px solid var(--border);
+  background: linear-gradient(180deg,
+    rgba(248,252,170,.22) 0%,
+    rgba(255,255,255,.95) 12%,
+    rgba(255,255,255,1) 50%,
+    rgba(182,237,255,.22) 72%,
+    rgba(255,214,232,.20) 88%,
+    rgba(248,252,170,.14) 100%
+  );
+  display:flex; flex-direction:column;
+  min-height:0;
+}
+
+.magic-body { flex:1; overflow-y:auto; padding:14px 18px; display:flex; flex-direction:column; gap:16px; }
+.magic-body::-webkit-scrollbar { width:4px; }
+.magic-body::-webkit-scrollbar-track { background:transparent; }
+.magic-body::-webkit-scrollbar-thumb { background:#EEE; border-radius:50px; }
+
+/* ── 6步导航 ── */
+.step-nav-scroll {
+  display:flex; align-items:flex-start; gap:0;
+  overflow-x:auto; padding:4px 0 8px; flex-shrink:0;
+  scrollbar-width:none;
+}
+.step-nav-scroll::-webkit-scrollbar { display:none; }
+
+.step-col {
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  flex-shrink:0; width:44px; cursor:pointer;
+}
+.step-connector-wrap {
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; width:10px; padding-bottom:20px;
+}
+.step-connector-wrap .step-poly-connector {
+  width:100%; height:1.5px; background:#E8E8E8; border-radius:1px;
+}
+.step-connector-wrap .step-poly-connector.done { background:#C0C0C0; }
+
+.step-poly {
+  width:38px; height:38px; position:relative;
+  display:flex; align-items:center; justify-content:center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+}
+.step-poly .poly-inner {
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  background:#FAFAF8;
+}
+.step-poly .poly-inner svg { width:22px; height:22px; display:block; }
+.step-poly.active .poly-inner { background:#FFFFFF; }
+.step-poly.done .poly-inner { background:#F8F8F6; }
+.step-poly.done { opacity:.45; }
+.step-poly.active {
+  transform:scale(1.25);
+  box-shadow:0 0 0 3px rgba(176,217,229,.35), 0 0 18px rgba(176,217,229,.22);
+}
+.step-poly[data-step="2"].active { box-shadow:0 0 0 3px rgba(255,215,162,.35), 0 0 18px rgba(255,215,162,.22); }
+.step-poly[data-step="3"].active { box-shadow:0 0 0 3px rgba(198,232,247,.35), 0 0 18px rgba(198,232,247,.22); }
+.step-poly[data-step="4"].active { box-shadow:0 0 0 3px rgba(255,160,196,.40), 0 0 18px rgba(255,160,196,.25); }
+.step-poly[data-step="5"].active { box-shadow:0 0 0 3px rgba(213,245,227,.35), 0 0 18px rgba(213,245,227,.22); }
+.step-poly[data-step="6"].active { box-shadow:0 0 0 3px rgba(255,228,181,.35), 0 0 18px rgba(255,228,181,.22); }
+
+.step-label {
+  font-size:7px; font-weight:700; color:var(--muted);
+  text-align:center; line-height:1.2; white-space:nowrap;
+}
+.step-label.active { color:var(--dark); }
+
+/* ── 步骤内容卡片 ── */
+.step-section {
+  display:none;
+  flex-direction:column; gap:0;
+  background:rgba(255,255,255,.5);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.5);
+  border-radius:20px;
+  box-shadow:0 4px 28px rgba(0,0,0,.06), 0 1px 0 rgba(255,255,255,.7) inset;
+  position:relative; overflow:hidden;
+  animation:stepCardIn .35s cubic-bezier(.4,0,.2,1);
+  flex:1;
+}
+.step-section.active { display:flex; }
+@keyframes stepCardIn {
+  from { opacity:0; transform:translateY(12px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.step-card-header { padding:16px 20px 0; position:relative; z-index:1; }
+.step-card-title { font-size:16px; font-weight:900; color:var(--dark); line-height:1.2; }
+
+.step-card-body {
+  padding:14px 20px 10px;
+  display:flex; flex-direction:column; gap:12px;
+  position:relative; z-index:1; flex:1;
+}
+
+/* 文本输入框 */
+.step-text-input {
+  width:100%; padding:18px 20px; border-radius:18px;
+  border:1px solid rgba(255,255,255,.5);
+  font-size:14px; font-family:inherit; resize:none; outline:none;
+  min-height:150px; line-height:1.8; color:var(--dark);
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:0 4px 24px rgba(0,0,0,.05), 0 1px 0 rgba(255,255,255,.8) inset;
+  transition:box-shadow .25s, border-color .25s, background .25s;
+}
+.step-text-input:focus {
+  border-color:rgba(255,255,255,.7);
+  background: rgba(255,255,255,.7);
+  box-shadow:0 0 0 3px rgba(0,191,207,.08), 0 8px 32px rgba(0,0,0,.08), 0 1px 0 rgba(255,255,255,.9) inset;
+}
+
+/* AI生图按钮 */
+.step-ai-btn {
+  width:100%; padding:16px 28px; border-radius:14px;
+  border:1px solid rgba(255,255,255,.5);
+  background: rgba(0,191,207,.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color:var(--cyan); font-size:15px; font-weight:800; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  box-shadow:0 4px 20px rgba(0,191,207,.12), 0 1px 0 rgba(255,255,255,.6) inset;
+  transition:transform .25s, box-shadow .25s, background .25s, border-color .25s;
+  letter-spacing:1px;
+}
+.step-ai-btn:hover {
+  transform:translateY(-2px) scale(1.02);
+  border-color:rgba(255,255,255,.7);
+  background: rgba(0,191,207,.18);
+  box-shadow:0 6px 28px rgba(0,191,207,.22), 0 1px 0 rgba(255,255,255,.8) inset;
+}
+.step-ai-btn .ai-icon { font-size:20px; line-height:1; }
+
+/* AI thinking */
+.ai-thinking {
+  display:none; align-items:center; gap:6px;
+  padding:8px 12px; border-radius:12px;
+  background:rgba(182,237,255,.14); border:1px solid var(--blue);
+  font-size:10px; color:#007a8c; font-weight:600;
+}
+.ai-thinking.show { display:flex; }
+.ai-thinking .ai-dots { display:flex; gap:3px; }
+.ai-thinking .ai-dots span {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--cyan); animation:bounce 1s ease-in-out infinite;
+}
+.ai-thinking .ai-dots span:nth-child(2) { animation-delay:.15s; }
+.ai-thinking .ai-dots span:nth-child(3) { animation-delay:.3s; }
+@keyframes bounce { 0%,100%{opacity:1;transform:translateY(0)} 50%{opacity:.3;transform:translateY(-3px)} }
+
+/* 上传图片区 */
+.step-upload-zone {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  border:1px solid rgba(255,255,255,.5); border-radius:18px;
+  background: rgba(182,237,255,.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor:pointer;
+  min-height:130px; flex:1;
+  transition:background .25s, box-shadow .25s, border-color .25s;
+  position:relative; overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.04), 0 1px 0 rgba(255,255,255,.7) inset;
+}
+.step-upload-zone:hover {
+  border-color:rgba(255,255,255,.7);
+  background: rgba(182,237,255,.22);
+  box-shadow:0 0 0 3px rgba(182,237,255,.15), 0 8px 32px rgba(0,0,0,.08), 0 1px 0 rgba(255,255,255,.8) inset;
+}
+.step-upload-zone.has-img { background:rgba(255,255,255,.7); backdrop-filter: blur(10px); box-shadow:0 0 0 2px rgba(255,255,255,.6), 0 4px 20px rgba(0,0,0,.06); }
+.step-upload-zone .upload-zone-empty {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  pointer-events:none;
+}
+.step-upload-zone .upload-zone-icon { font-size:28px; opacity:.45; }
+.step-upload-zone .upload-zone-text { font-size:11px; font-weight:700; color:rgba(0,150,170,.45); }
+.step-upload-zone img {
+  width:100%; height:100%; object-fit:cover; border-radius:14px; position:absolute; inset:0;
+}
+.step-upload-zone .upload-zone-remove {
+  position:absolute; top:6px; right:6px; z-index:2;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(0,0,0,.4); border:none; color:white;
+  font-size:10px; cursor:pointer;
+  display:none; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.step-upload-zone .upload-zone-remove:hover { background:rgba(0,0,0,.65); }
+.step-upload-zone.has-img:hover .upload-zone-remove { display:flex; }
+
+/* 分镜槽位 */
+.storyboard-slots {
+  display:flex; flex-direction:column; gap:10px;
+  max-height:280px; overflow-y:auto; padding-right:4px;
+}
+.storyboard-slots::-webkit-scrollbar { width:4px; }
+.storyboard-slots::-webkit-scrollbar-track { background:transparent; }
+.storyboard-slots::-webkit-scrollbar-thumb { background:#DDD; border-radius:50px; }
+.sb-slot {
+  border:1px solid rgba(255,255,255,.5); border-radius:16px;
+  background: rgba(182,237,255,.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor:pointer;
+  min-height:80px; display:flex; align-items:center; justify-content:center;
+  transition:background .2s, box-shadow .2s, border-color .2s;
+  position:relative; overflow:hidden;
+  box-shadow:0 2px 14px rgba(0,0,0,.03), 0 1px 0 rgba(255,255,255,.6) inset;
+}
+.sb-slot:hover {
+  border-color:rgba(255,255,255,.7);
+  background: rgba(182,237,255,.20);
+  box-shadow:0 0 0 3px rgba(182,237,255,.12), 0 4px 20px rgba(0,0,0,.06), 0 1px 0 rgba(255,255,255,.7) inset;
+}
+.sb-slot.has-img { background:rgba(255,255,255,.6); backdrop-filter:blur(8px); box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 2px 16px rgba(0,0,0,.04); }
+.sb-slot-empty {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:14px; pointer-events:none;
+}
+.sb-slot-num { font-size:11px; font-weight:800; color:rgba(0,150,170,.45); }
+.sb-slot-icon { font-size:24px; opacity:.45; }
+.sb-slot img {
+  width:100%; display:block; max-height:120px; object-fit:cover; border-radius:12px;
+}
+.sb-slot-remove {
+  position:absolute; top:6px; right:6px;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(0,0,0,.4); border:none; color:white;
+  font-size:10px; cursor:pointer;
+  display:none; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.sb-slot-remove:hover { background:rgba(0,0,0,.65); }
+.sb-slot.has-img:hover .sb-slot-remove { display:flex; }
+
+.sb-upload-center {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:10px 20px; border-radius:50px;
+  border:1px solid rgba(255,255,255,.5);
+  background: rgba(182,237,255,.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color:rgba(0,150,170,.85); font-size:13px; font-weight:700; cursor:pointer;
+  transition:background .2s, box-shadow .2s, transform .15s;
+  width:fit-content; margin:0 auto;
+  box-shadow:0 2px 12px rgba(0,191,207,.06), 0 1px 0 rgba(255,255,255,.6) inset;
+}
+.sb-upload-center:hover {
+  border-color:rgba(255,255,255,.7);
+  background: rgba(182,237,255,.22);
+  box-shadow:0 0 0 3px rgba(182,237,255,.12), 0 4px 20px rgba(0,191,207,.1), 0 1px 0 rgba(255,255,255,.7) inset;
+  transform:translateY(-2px);
+}
+
+.add-sb-slot {
+  padding:10px; border-radius:14px;
+  border:1px solid rgba(255,255,255,.4);
+  background: rgba(182,237,255,.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color:rgba(0,150,170,.55); font-size:11px; font-weight:700;
+  cursor:pointer; text-align:center;
+  transition:background .15s, color .15s, box-shadow .15s, border-color .15s;
+}
+.add-sb-slot:hover {
+  border-color:rgba(255,255,255,.6);
+  background: rgba(182,237,255,.16);
+  color:rgba(0,150,170,.8);
+  box-shadow:0 0 0 2px rgba(182,237,255,.1), 0 1px 0 rgba(255,255,255,.6) inset;
+}
+
+/* 语音输入 */
+.step-voice-row { display:flex; gap:8px; align-items:center; }
+.step-voice-btn {
+  padding:8px 16px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:11px; font-weight:700; cursor:pointer; color:var(--muted);
+  display:flex; align-items:center; gap:5px; white-space:nowrap;
+  transition:border-color .15s, background .15s;
+}
+.step-voice-btn:hover { border-color:var(--cyan); background:rgba(182,237,255,.06); }
+.step-voice-btn.recording {
+  border-color:#e05a8a; background:rgba(224,90,138,.08); color:#e05a8a;
+  animation:pulse2 1.2s ease-in-out infinite;
+  box-shadow:0 0 0 4px rgba(224,90,138,.12);
+}
+
+/* 步骤导航按钮 */
+.step-nav-row {
+  display:flex; gap:8px; padding:10px 20px 20px; position:relative; z-index:1;
+}
+.step-nav-btn {
+  padding:9px 18px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:12px; font-weight:700; cursor:pointer; color:var(--muted);
+  display:flex; align-items:center; gap:5px;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.step-nav-btn:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(182,237,255,.04); }
+.step-nav-btn:first-child { margin-right:auto; }
+.step-nav-btn.primary-nav {
+  background:var(--dark); color:white; border-color:var(--dark); margin-left:auto;
+}
+.step-nav-btn.primary-nav:hover { background:var(--cyan); border-color:var(--cyan); color:white; }
+
+/* ── Step 6 图片转视频样式 ── */
+.i2v-generate-btn {
+  width:100%; padding:14px; border-radius:50px; border:none;
+  background:linear-gradient(135deg, #FFD6E8 0%, #00BFCF 50%, #F8FCAA 100%);
+  color:white; font-size:14px; font-weight:900; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  box-shadow:0 4px 24px rgba(0,191,207,.28);
+  transition:transform .2s, box-shadow .2s;
+}
+.i2v-generate-btn:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(0,191,207,.4); }
+.i2v-generate-btn:disabled { opacity:.4; cursor:default; transform:none; box-shadow:none; }
+
+.i2v-progress-bar { width:100%; height:5px; background:#EEE; border-radius:50px; }
+.i2v-progress-fill { height:100%; width:0%; background:var(--cyan); border-radius:50px; transition:width .3s; }
+
+.i2v-video-result {
+  display:none; border-radius:14px; overflow:hidden;
+  background:#12141A; position:relative; aspect-ratio:16/9;
+}
+.i2v-video-result.show { display:block; }
+.i2v-video-placeholder {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+}
+.i2v-video-placeholder .vr-icon { font-size:36px; filter:drop-shadow(0 4px 16px rgba(0,0,0,.5)); }
+.i2v-video-placeholder .vr-text { font-size:12px; font-weight:800; color:white; }
+.i2v-video-placeholder .vr-sub { font-size:10px; color:rgba(255,255,255,.35); }
+
+.i2v-result-actions { display:none; gap:8px; }
+.i2v-result-actions .r-act {
+  flex:1; padding:8px; border-radius:50px; border:none;
+  font-size:11px; font-weight:700; cursor:pointer; text-align:center;
+}
+.i2v-result-actions .r-act.primary { background:var(--dark); color:white; }
+.i2v-result-actions .r-act.secondary { background:#F0F0F0; color:var(--muted); }
+
+/* ── 备课视频浮层面板 ── */
+.video-panel-overlay {
+  display:none; position:absolute; inset:0; z-index:30;
+  background:white; border-radius:20px;
+  flex-direction:column; overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.12);
+}
+.video-panel-overlay.show { display:flex; }
+.video-panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 24px; border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.video-panel-title { font-size:15px; font-weight:800; }
+.video-panel-close {
+  width:30px; height:30px; border-radius:50%;
+  border:1.5px solid var(--border); background:white;
+  font-size:13px; cursor:pointer; color:var(--muted);
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .15s;
+}
+.video-panel-close:hover { border-color:var(--cyan); color:var(--cyan); }
+.video-panel-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.video-panel-body::-webkit-scrollbar { width:4px; }
+.video-panel-body::-webkit-scrollbar-thumb { background:#EEE; border-radius:50px; }
+
+/* ── 视频播放器 ── */
+.vp-player {
+  flex-shrink:0; border-radius:14px; overflow:hidden;
+  border:1.5px solid var(--border);
+}
+.vp-player-screen {
+  position:relative; aspect-ratio:16/9; cursor:pointer;
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+}
+.vp-player-bg {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at 30% 40%, #1A2540 0%, #0D0F14 60%, #0A0A0F 100%);
+}
+.vp-player-content {
+  position:relative; z-index:1; display:flex;
+  flex-direction:column; align-items:center; gap:8px; text-align:center;
+  transition:opacity .3s;
+}
+.vp-player.playing .vp-player-content { opacity:.5; }
+.vp-player-icon { font-size:42px; filter:drop-shadow(0 4px 16px rgba(0,0,0,.5)); }
+.vp-player-name { font-size:14px; font-weight:900; color:white; letter-spacing:-.3px; }
+.vp-player-meta { font-size:11px; color:rgba(255,255,255,.35); }
+.vp-play-overlay {
+  position:absolute; inset:0; z-index:2;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0); transition:background .2s;
+}
+.vp-player-screen:hover .vp-play-overlay { background:rgba(0,0,0,.12); }
+.vp-player.playing .vp-play-overlay { opacity:0; }
+.vp-player.playing .vp-player-screen:hover .vp-play-overlay { opacity:1; background:rgba(0,0,0,.2); }
+.vp-play-circle {
+  width:48px; height:48px; border-radius:50%;
+  background:rgba(255,255,255,.15); backdrop-filter:blur(8px);
+  border:2px solid rgba(255,255,255,.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; color:white; padding-left:2px;
+  transition:transform .2s, background .2s;
+}
+.vp-player-screen:hover .vp-play-circle { transform:scale(1.1); background:rgba(0,191,207,.5); }
+.vp-player.playing .vp-play-circle { background:rgba(0,191,207,.5); }
+
+.vp-progress { padding:8px 14px 0; cursor:pointer; }
+.vp-progress-track {
+  width:100%; height:3px; background:#EEE; border-radius:50px;
+  position:relative; transition:height .15s;
+}
+.vp-progress:hover .vp-progress-track { height:5px; }
+.vp-progress-fill {
+  height:100%; background:var(--cyan); border-radius:50px;
+  width:0%; position:relative; transition:width .3s linear;
+}
+.vp-progress-fill::after {
+  content:''; position:absolute; right:-5px; top:50%; transform:translateY(-50%);
+  width:11px; height:11px; border-radius:50%;
+  background:white; border:2px solid var(--cyan);
+  opacity:0; transition:opacity .15s;
+}
+.vp-progress:hover .vp-progress-fill::after { opacity:1; }
+
+.vp-controls {
+  display:flex; align-items:center; gap:8px; padding:6px 14px 10px;
+}
+.vp-ctrl-btn {
+  width:28px; height:28px; border-radius:50%;
+  border:1.5px solid var(--border); background:white;
+  font-size:10px; cursor:pointer; color:var(--dark);
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .15s, background .15s;
+}
+.vp-ctrl-btn:hover { border-color:var(--cyan); background:rgba(182,237,255,.08); }
+.vp-ctrl-btn.playing-ctrl { background:var(--cyan); color:white; border-color:var(--cyan); }
+.vp-time { font-size:11px; color:var(--muted); font-weight:600; white-space:nowrap; }
+.vp-ctrl-spacer { flex:1; }
+.vp-ctrl-tag {
+  padding:3px 10px; border-radius:6px;
+  background:var(--bg); font-size:10px; font-weight:700; color:var(--muted);
+}
+.vp-player.playing .vp-ctrl-tag { background:rgba(182,237,255,.2); color:#007a8c; }
+
+/* ── 视频列表 ── */
+.vp-list-label {
+  font-size:11px; font-weight:800; color:var(--muted);
+  letter-spacing:.5px; padding:4px 4px 0;
+}
+.video-panel-item {
+  display:flex; gap:12px; padding:10px 12px;
+  border-radius:12px; cursor:pointer;
+  transition:background .15s; align-items:center;
+  border:2px solid transparent; position:relative;
+}
+.video-panel-item:hover { background:#F7F8FA; }
+.video-panel-item.active { background:rgba(182,237,255,.2); border-color:var(--cyan); }
+.vp-thumb {
+  width:68px; height:44px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; position:relative;
+}
+.vp-info { flex:1; min-width:0; }
+.vp-title { font-size:13px; font-weight:700; margin-bottom:3px; line-height:1.3; }
+.vp-dur { font-size:11px; color:var(--muted); }
+.video-panel-item.active .vp-dur { color:var(--cyan); }
+.vp-playing-dot {
+  display:none; align-items:center; justify-content:center; flex-shrink:0;
+}
+.vp-playing-dot div {
+  width:6px; height:6px; border-radius:50%; background:var(--cyan);
+  animation:vpPulse 1.2s ease-in-out infinite;
+}
+@keyframes vpPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+.video-panel-item.active .vp-playing-dot { display:flex; }
+
+/* ── 全屏演示层 ── */
+.fs-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:#111;
+  display:none;
+}
+
+/* 全屏顶栏 */
+.fs-topbar {
+  position:absolute; top:0; left:0; right:0; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 28px;
+  background:linear-gradient(to bottom, rgba(0,0,0,.35) 0%, transparent 100%);
+  pointer-events:none;
+}
+.fs-topbar > * { pointer-events:auto; }
+.fs-course { font-size:12px; font-weight:700; color:rgba(255,255,255,.7); letter-spacing:.5px; }
+.fs-counter { font-size:12px; font-weight:700; color:rgba(255,255,255,.6); }
+.fs-exit {
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.25);
+  color:white; font-size:20px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
+  line-height:1;
+}
+.fs-exit:hover { background:rgba(220,60,60,.85); border-color:rgba(255,255,255,.5); }
+
+/* 全屏退出按钮（独立于 overlay，避免嵌套 display:none 导致的点击失效） */
+.fs-exit-outer {
+  position:fixed; top:18px; right:28px; z-index:520;
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(0,0,0,.45); border:2px solid rgba(255,255,255,.3);
+  color:white; font-size:22px; cursor:pointer;
+  display:none; align-items:center; justify-content:center;
+  line-height:1; transition:background .15s;
+}
+.fs-exit-outer:hover { background:rgba(220,60,60,.9); border-color:rgba(255,255,255,.6); }
+
+/* 全屏幻灯片容器 */
+.fs-slide-wrap {
+  position:absolute; inset:0; z-index:1;
+  background:white;
+  overflow:hidden;
+}
+.fs-slide-inner {
+  width:100%; height:100%; padding:8vh 10vw;
+  display:flex; flex-direction:column; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.fs-deco {
+  position:absolute; right:5vw; top:6vh;
+  font-size:clamp(64px,10vw,140px); opacity:.1; pointer-events:none; line-height:1;
+}
+
+/* 全屏导航箭头 */
+.fs-arrow {
+  position:fixed; top:50%; transform:translateY(-50%); z-index:510;
+  width:52px; height:52px; border-radius:50%;
+  background:rgba(0,0,0,.18); border:none;
+  color:rgba(255,255,255,.85); font-size:20px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.fs-arrow:hover { background:rgba(0,0,0,.35); }
+.fs-arrow:disabled { opacity:.2; cursor:default; }
+.fs-arrow-prev { left:20px; }
+.fs-arrow-next { right:20px; }
+
+/* 全屏底部点 */
+.fs-dots {
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:510;
+  display:flex; gap:7px;
+}
+.fs-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:rgba(255,255,255,.2); cursor:pointer;
+  transition:background .15s, transform .15s;
+}
+.fs-dot.active { background:rgba(255,255,255,.85); transform:scale(1.25); }
+
+/* 全屏内幻灯片样式（镜像 main view）*/
+.fs-slide-inner .s-tag {
+  display:inline-block; background:var(--blue);
+  color:#007a8c; font-size:clamp(11px,1.1vw,14px); font-weight:700;
+  padding:5px 14px; border-radius:50px; margin-bottom:2.5vh;
+  letter-spacing:.5px; width:fit-content;
+}
+.fs-slide-inner .s-tag.pink { background:#FFD6E8; color:#a03060; }
+.fs-slide-inner h2 { font-size:clamp(28px,4vw,56px); font-weight:900; margin-bottom:2vh; line-height:1.2; }
+.fs-slide-inner .slide-body { font-size:clamp(14px,1.6vw,22px); color:var(--muted); line-height:1.8; max-width:72%; }
+.fs-slide-inner .slide-chips { margin-top:3vh; }
+.fs-slide-inner .chip {
+  font-size:clamp(12px,1.2vw,16px); padding:7px 16px;
+}
+.fs-slide-inner .slide-code {
+  margin-top:3vh; background:#F7F8FA; border-radius:12px;
+  padding:16px 20px; font-family:monospace; font-size:clamp(13px,1.3vw,18px); color:#333;
+  border:1px solid #E8E8E8; max-width:64%; line-height:1.8;
+}
+
+/* ── RESPONSIVE ── */
+
+/* Desktop: ≥1200px (默认样式) */
+
+/* Tablet: 768px – 1199px */
+@media (min-width:768px) and (max-width:1199px) {
+  /* Sidebar: icon-only 72px */
+  .sidebar { width:72px; }
+  .sb-logo { padding:20px 0; text-align:center; font-size:16px; }
+  .sb-logo em { display:none; }
+  .sb-section { display:none; }
+  .sb-nav { padding:8px 6px; }
+  .sb-item { padding:10px; justify-content:center; gap:0; }
+  .sb-item span:not(.icon) { display:none; }
+  .sb-foot { padding:12px 6px; justify-content:center; }
+  .sb-foot > div:last-child { display:none; }
+
+  /* Main */
+  .main { margin-left:72px; }
+
+  /* Content grid */
+  .content { grid-template-columns:1fr 320px; }
+
+  /* PPT area */
+  .ppt-area { padding:20px 18px 18px 22px; }
+  .slide-inner { padding:32px 40px; }
+  .slide-inner h2 { font-size:24px; }
+  .slide-inner .slide-body { font-size:14px; }
+  .ppt-title { font-size:17px; }
+  .ppt-header { gap:10px; }
+  .ppt-fs-btn { padding:6px 12px; font-size:11px; }
+}
+
+/* Mobile: ≤767px */
+@media (max-width:767px) {
+  /* Hide sidebar */
+  .sidebar { display:none; }
+
+  /* Fixed bottom nav bar */
+  .main {
+    margin-left:0;
+    padding-bottom:60px;
+  }
+  body::after {
+    content:'';
+    display:block;
+    position:fixed; bottom:0; left:0; right:0; height:60px;
+    background:white; border-top:1px solid var(--border);
+    z-index:50;
+  }
+  .sidebar {
+    display:flex;
+    flex-direction:row;
+    width:100%; height:60px;
+    position:fixed; top:auto; bottom:0; left:0; right:0;
+    border-right:none; border-top:1px solid var(--border);
+    z-index:50;
+  }
+  .sb-logo   { display:none; }
+  .sb-section { display:none; }
+  .sb-nav {
+    flex:1; flex-direction:row;
+    padding:0; gap:0; justify-content:space-around; align-items:stretch;
+  }
+  .sb-item {
+    flex:1; flex-direction:column; gap:2px; padding:8px 4px;
+    border-radius:0; font-size:10px; justify-content:center;
+  }
+  .sb-item span:not(.icon) { display:block; }
+  .sb-item .icon { width:24px; height:24px; border-radius:6px; }
+  .sb-foot { display:none; }
+
+  /* Main: single column, scrollable */
+  body { height:auto; min-height:100vh; overflow:visible; }
+  .main { margin-left:0; overflow:visible; }
+  .content { grid-template-columns:1fr; overflow:visible; }
+  .ppt-area { overflow:visible; }
+
+  /* Side panel: collapsible on mobile */
+  .side-panel {
+    border-left:none; border-top:1px solid var(--border);
+    max-height:42px; overflow:hidden; flex-shrink:0;
+    transition:max-height .3s;
+  }
+  .side-panel.expanded { max-height:480px; }
+  .side-panel.expanded .magic-toggle-arrow { transform:rotate(180deg); }
+
+  .step-col { width:44px; }
+  .step-poly { width:36px; height:36px; }
+  .step-poly .poly-inner svg { width:22px; height:22px; }
+  .step-label { font-size:7px; }
+  .step-connector-wrap { width:12px; }
+
+  /* PPT area adjustments */
+  .ppt-area { padding:16px 16px 12px; }
+  .ppt-header { flex-wrap:wrap; gap:8px; }
+  .ppt-title { font-size:15px; }
+  .ppt-count { font-size:11px; }
+  .ppt-fs-btn {
+    padding:5px 10px; font-size:10px;
+  }
+
+  /* Slide content */
+  .slide-inner { padding:24px 20px; }
+  .slide-inner h2 { font-size:18px; margin-bottom:10px; }
+  .slide-inner .slide-body { font-size:13px; line-height:1.6; }
+  .s-tag { font-size:10px; padding:3px 10px; margin-bottom:14px; }
+  .slide-chips { gap:6px; margin-top:14px; }
+  .chip { font-size:11px; padding:5px 12px; }
+  .slide-code {
+    margin-top:16px; padding:10px 14px; font-size:11px;
+    max-width:100%;
+  }
+
+  /* Thumbs scrollable (already overflow-x:auto, ensure no wrap) */
+  .thumbs { flex-wrap:nowrap; gap:6px; }
+  .thumb { width:64px; height:42px; }
+
+  /* Controls */
+  .ppt-btn { width:34px; height:34px; font-size:14px; }
+  .ppt-counter { font-size:12px; min-width:50px; }
+
+  /* Step wizard card adjustments */
+  .step-card-title { font-size:14px; }
+  .step-card-header { padding:14px 16px 0; }
+  .step-card-body { padding:12px 16px 8px; }
+  .step-nav-row { padding:8px 16px 16px; }
+
+  /* Side panel toggle bar */
+  .magic-mobile-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px; height:42px; cursor:pointer; flex-shrink:0;
+    font-size:12px; font-weight:800; color:var(--dark);
+    background:linear-gradient(135deg, rgba(255,214,232,.35) 0%, rgba(0,191,207,.18) 50%, rgba(248,252,170,.25) 100%);
+  }
+  .magic-mobile-bar::after {
+    content:'点击展开魔法工坊'; font-size:8px; font-weight:600; color:var(--cyan);
+    background:rgba(255,255,255,.8); padding:2px 6px; border-radius:50px;
+  }
+  .side-panel.expanded .magic-mobile-bar::after { content:'点击收起'; }
+  .magic-toggle-arrow { font-size:9px; color:var(--cyan); transition:transform .3s; animation:arrowBounce 1.5s ease-in-out infinite; }
+  @keyframes arrowBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
+  .side-panel.expanded .magic-toggle-arrow { animation:none; }
+
+  /* Video panel */
+  .video-panel-header { padding:14px 18px; }
+  .video-panel-body { padding:12px 14px; }
+  .vp-player-icon { font-size:32px; }
+  .vp-player-name { font-size:12px; }
+  .vp-play-circle { width:40px; height:40px; font-size:14px; }
+  .vp-thumb { width:56px; height:36px; font-size:18px; }
+  .vp-title { font-size:12px; }
+}
+
+/* Small Mobile: ≤480px */
+@media (max-width:480px) {
+  .main { padding-bottom:56px; }
+  .sidebar { height:56px; }
+  .sb-item { padding:8px 2px; font-size:9px; }
+  .sb-item .icon { width:24px; height:24px; }
+
+  .ppt-area { padding:12px 12px 10px; }
+  .ppt-header { gap:6px; }
+  .ppt-title { font-size:13px; }
+  .ppt-count { font-size:10px; }
+  .ppt-fs-btn {
+    padding:4px 8px; font-size:9px;
+  }
+
+  .slide-inner { padding:18px 16px; }
+  .slide-inner h2 { font-size:16px; margin-bottom:8px; }
+  .slide-inner .slide-body { font-size:12px; }
+  .s-tag { font-size:9px; padding:2px 8px; margin-bottom:10px; }
+  .chip { font-size:10px; padding:4px 10px; }
+  .slide-code {
+    margin-top:12px; padding:8px 12px; font-size:10px;
+  }
+
+  .thumbs { gap:4px; }
+  .thumb { width:56px; height:36px; }
+  .thumb-inner { font-size:9px; }
+
+  .ppt-btn { width:30px; height:30px; font-size:12px; }
+  .ppt-counter { font-size:11px; min-width:45px; }
+
+  .side-panel { max-height:40px; }
+  .side-panel.expanded { max-height:420px; }
+
+  .step-col { width:38px; }
+  .step-poly { width:32px; height:32px; }
+  .step-poly .poly-inner svg { width:18px; height:18px; }
+  .step-label { font-size:6px; }
+  .step-connector-wrap { width:9px; }
+  .magic-mobile-bar { padding:0 12px; height:40px; font-size:11px; }
+  .magic-mobile-bar::after { font-size:7px; }
+  .step-card-title { font-size:13px; }
+  .step-card-header { padding:12px 14px 0; }
+  .step-card-body { padding:10px 14px 6px; }
+  .step-nav-row { padding:6px 14px 12px; }
+  .step-nav-btn { padding:7px 14px; font-size:11px; }
+  .step-text-input { padding:14px 16px; font-size:13px; min-height:120px; }
+  .step-ai-btn { padding:12px 20px; font-size:13px; }
+  .video-panel-header { padding:10px 14px; }
+  .video-panel-title { font-size:13px; }
+  .video-panel-body { padding:10px 12px; }
+  .vp-player-icon { font-size:28px; }
+  .vp-player-name { font-size:11px; }
+  .vp-player-meta { font-size:10px; }
+  .vp-play-circle { width:34px; height:34px; font-size:12px; }
+  .vp-progress { padding:6px 10px 0; }
+  .vp-controls { padding:4px 10px 6px; }
+  .vp-thumb { width:48px; height:32px; font-size:16px; }
+  .vp-title { font-size:11px; }
+  .vp-dur { font-size:10px; }
+
+  .topbar { padding:0 12px; font-size:12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">Spark<em>AI</em></div>
+  <div class="sb-nav">
+    <div class="sb-section">主菜单</div>
+    <a class="sb-item active" href="teacher-home.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg></span>我的课程
+    </a>
+    <a class="sb-item" href="teacher-class.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/><circle cx="12.5" cy="5.5" r="2"/><path d="M15 14c0-2.2-1.4-3.6-3-4"/></svg></span>班级管理
+    </a>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-avatar">王</div>
+    <div>
+      <div class="sb-uname">王老师</div>
+      <div class="sb-role">机构教师</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- 面包屑 -->
+  <div class="topbar">
+    <a href="teacher-home.html">我的课程</a>
+    <span class="sep">/</span>
+    <span class="current" id="courseTitle">AI 导演课</span>
+  </div>
+
+  <!-- 内容区 -->
+  <div class="content">
+
+    <!-- PPT 区 -->
+    <div class="ppt-area">
+      <div class="ppt-header">
+        <div class="ppt-header-left">
+          <div class="ppt-title" id="slideTitle">第 1 课 · 什么是 AI 导演？</div>
+          <div class="ppt-count" id="slideCount">1 / 5</div>
+        </div>
+        <div class="ppt-header-right">
+          <button class="ppt-fs-btn" onclick="toggleVideoPanel()">
+            <span style="font-size:14px;">📹</span> 备课视频
+          </button>
+          <button class="ppt-fs-btn" onclick="enterFullscreen()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.5V2h3.5M10.5 2H14v3.5M14 10.5V14h-3.5M5.5 14H2v-3.5"/></svg>
+            全屏演示
+          </button>
+        </div>
+      </div>
+
+      <!-- 幻灯片主体 -->
+      <div class="ppt-slide" id="mainSlide"></div>
+
+      <!-- 翻页 -->
+      <div class="ppt-controls">
+        <button class="ppt-btn" id="btnPrev" onclick="changeSlide(-1)">←</button>
+        <div class="ppt-counter" id="mainCounter">1 / 5</div>
+        <button class="ppt-btn" id="btnNext" onclick="changeSlide(1)">→</button>
+      </div>
+
+      <!-- 缩略图 -->
+      <div class="thumbs" id="thumbsRow"></div>
+
+      <!-- 备课视频浮层面板 -->
+      <div class="video-panel-overlay" id="videoPanelOverlay">
+        <div class="video-panel-header">
+          <span class="video-panel-title">📹 备课视频</span>
+          <button class="video-panel-close" onclick="toggleVideoPanel()">✕</button>
+        </div>
+        <div class="video-panel-body">
+          <!-- 视频播放器 -->
+          <div class="vp-player" id="vpPlayer">
+            <div class="vp-player-screen" id="vpPlayerScreen" onclick="vpTogglePlay()">
+              <div class="vp-player-bg"></div>
+              <div class="vp-player-content" id="vpPlayerContent">
+                <div class="vp-player-icon" id="vpPlayerIcon">🎬</div>
+                <div class="vp-player-name" id="vpPlayerName">导演思维入门讲解</div>
+                <div class="vp-player-meta" id="vpPlayerMeta">王老师 · 14:22</div>
+              </div>
+              <div class="vp-play-overlay" id="vpPlayOverlay">
+                <div class="vp-play-circle" id="vpPlayCircle">▶</div>
+              </div>
+            </div>
+            <div class="vp-progress" id="vpProgress" onclick="vpSeek(event)">
+              <div class="vp-progress-track">
+                <div class="vp-progress-fill" id="vpProgressFill"></div>
+              </div>
+            </div>
+            <div class="vp-controls">
+              <button class="vp-ctrl-btn" id="vpPlayBtn" onclick="vpTogglePlay()">▶</button>
+              <span class="vp-time" id="vpTime">00:00 / 14:22</span>
+              <div class="vp-ctrl-spacer"></div>
+              <span class="vp-ctrl-tag" id="vpStatus">就绪</span>
+            </div>
+          </div>
+          <!-- 视频列表 -->
+          <div class="vp-list-label">视频列表</div>
+          <div class="video-panel-item active" data-vp-idx="0" onclick="vpSelectVideo(this, 0)">
+            <div class="vp-thumb" style="background:#FFD6E8;">🎬</div>
+            <div class="vp-info">
+              <div class="vp-title">导演思维入门讲解</div>
+              <div class="vp-dur">14:22</div>
+            </div>
+            <div class="vp-playing-dot" style="display:flex;"><div></div></div>
+          </div>
+          <div class="video-panel-item" data-vp-idx="1" onclick="vpSelectVideo(this, 1)">
+            <div class="vp-thumb" style="background:var(--blue);">🎥</div>
+            <div class="vp-info">
+              <div class="vp-title">镜头语言示范课</div>
+              <div class="vp-dur">11:08</div>
+            </div>
+            <div class="vp-playing-dot"><div></div></div>
+          </div>
+          <div class="video-panel-item" data-vp-idx="2" onclick="vpSelectVideo(this, 2)">
+            <div class="vp-thumb" style="background:var(--yellow);">🪄</div>
+            <div class="vp-info">
+              <div class="vp-title">AI 图像生成演示</div>
+              <div class="vp-dur">09:35</div>
+            </div>
+            <div class="vp-playing-dot"><div></div></div>
+          </div>
+          <div class="video-panel-item" data-vp-idx="3" onclick="vpSelectVideo(this, 3)">
+            <div class="vp-thumb" style="background:#E8DCFF;">🎵</div>
+            <div class="vp-info">
+              <div class="vp-title">配音与音效教学</div>
+              <div class="vp-dur">07:50</div>
+            </div>
+            <div class="vp-playing-dot"><div></div></div>
+          </div>
+          <div class="video-panel-item" data-vp-idx="4" onclick="vpSelectVideo(this, 4)">
+            <div class="vp-thumb" style="background:#E4F8E4;">🏆</div>
+            <div class="vp-info">
+              <div class="vp-title">学生作品展示与点评</div>
+              <div class="vp-dur">12:17</div>
+            </div>
+            <div class="vp-playing-dot"><div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧面板：6步魔法工坊 -->
+    <div class="side-panel" id="magicPanel">
+      <div class="magic-mobile-bar" onclick="toggleTeacherMagic()">
+        <span>🪄 AI 魔法工坊</span>
+        <span class="magic-toggle-arrow">▼</span>
+      </div>
+      <div class="magic-body" id="magicBody">
+
+        <!-- 6步导航 -->
+        <div class="step-nav-scroll" id="stepNavScroll">
+          <div class="step-col" data-step="1" onclick="goToStep(1)">
+            <div class="step-poly active"><div class="poly-inner"><svg viewBox="0 0 24 24"><rect x="2" y="10" width="20" height="4" rx="2" fill="#B0D9E5" transform="rotate(45 12 12)"/><rect x="2" y="10" width="20" height="4" rx="2" fill="#B0D9E5" transform="rotate(-45 12 12)"/></svg></div></div>
+            <span class="step-label active">one</span>
+          </div>
+          <div class="step-connector-wrap"><div class="step-poly-connector" data-line="1"></div></div>
+          <div class="step-col" data-step="2" onclick="goToStep(2)">
+            <div class="step-poly"><div class="poly-inner"><svg viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="#FFD7A2"/></svg></div></div>
+            <span class="step-label">two</span>
+          </div>
+          <div class="step-connector-wrap"><div class="step-poly-connector" data-line="2"></div></div>
+          <div class="step-col" data-step="3" onclick="goToStep(3)">
+            <div class="step-poly"><div class="poly-inner"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5" fill="#C6E8F7"/><rect x="10.5" y="2.5" width="3" height="6.5" rx="1.5" fill="#C6E8F7"/><rect x="10.5" y="15" width="3" height="6.5" rx="1.5" fill="#C6E8F7"/><rect x="2.5" y="10.5" width="6.5" height="3" rx="1.5" fill="#C6E8F7"/><rect x="15" y="10.5" width="6.5" height="3" rx="1.5" fill="#C6E8F7"/></svg></div></div>
+            <span class="step-label">three</span>
+          </div>
+          <div class="step-connector-wrap"><div class="step-poly-connector" data-line="3"></div></div>
+          <div class="step-col" data-step="4" onclick="goToStep(4)">
+            <div class="step-poly"><div class="poly-inner"><svg viewBox="0 0 24 24"><polygon points="12,1.5 14.5,8 21,9 15.5,13.5 16.5,20 12,17 7.5,20 8.5,13.5 3,9 9.5,8" fill="#FFA0C4"/></svg></div></div>
+            <span class="step-label">four</span>
+          </div>
+          <div class="step-connector-wrap"><div class="step-poly-connector" data-line="4"></div></div>
+          <div class="step-col" data-step="5" onclick="goToStep(5)">
+            <div class="step-poly"><div class="poly-inner"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="#D5F5E3" transform="rotate(45 12 12)"/></svg></div></div>
+            <span class="step-label">five</span>
+          </div>
+          <div class="step-connector-wrap"><div class="step-poly-connector" data-line="5"></div></div>
+          <div class="step-col" data-step="6" onclick="goToStep(6)">
+            <div class="step-poly"><div class="poly-inner"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="#FFE4B5"/><line x1="12" y1="1.5" x2="12" y2="4.5" stroke="#FFE4B5" stroke-width="3" stroke-linecap="round"/><line x1="12" y1="19.5" x2="12" y2="22.5" stroke="#FFE4B5" stroke-width="3" stroke-linecap="round"/><line x1="1.5" y1="12" x2="4.5" y2="12" stroke="#FFE4B5" stroke-width="3" stroke-linecap="round"/><line x1="19.5" y1="12" x2="22.5" y2="12" stroke="#FFE4B5" stroke-width="3" stroke-linecap="round"/></svg></div></div>
+            <span class="step-label">six</span>
+          </div>
+        </div>
+
+        <!-- ═══ Step 1 ═══ -->
+        <div class="step-section active" data-step="1" id="stepCard1">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 1  IP人物创作</div>
+          </div>
+          <div class="step-card-body">
+            <textarea class="step-text-input" id="step1Text" placeholder="描述你的主角（人物或小动物），比如'一只戴帽子的小猫，喜欢冒险'…"></textarea>
+            <button class="step-ai-btn" onclick="aiGenerate(1)"><span class="ai-icon">🤖</span>AI 生图</button>
+            <div class="ai-thinking" id="aiThinking1"><div class="ai-dots"><span></span><span></span><span></span></div> AI 正在画你的主角…</div>
+            <div class="step-upload-zone" id="stepUpload1" onclick="triggerUpload(1)">
+              <div class="upload-zone-empty"><span class="upload-zone-icon">🖼</span><span class="upload-zone-text">点击上传图片</span></div>
+              <button class="upload-zone-remove" onclick="event.stopPropagation();removeUploadImg(1)">✕</button>
+            </div>
+            <input type="file" id="fileInput1" accept="image/*" style="display:none" onchange="handleFileSelect(1, this)">
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn primary-nav" onclick="goToStep(2)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- ═══ Step 2 ═══ -->
+        <div class="step-section" data-step="2" id="stepCard2">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 2  场景创作</div>
+          </div>
+          <div class="step-card-body">
+            <textarea class="step-text-input" id="step2Text" placeholder="描述你的场景，比如'一个魔法森林，有会发光的蘑菇和彩虹瀑布'…"></textarea>
+            <button class="step-ai-btn" onclick="aiGenerate(2)"><span class="ai-icon">🤖</span>AI 生图</button>
+            <div class="ai-thinking" id="aiThinking2"><div class="ai-dots"><span></span><span></span><span></span></div> AI 正在画你的场景…</div>
+            <div class="step-upload-zone" id="stepUpload2" onclick="triggerUpload(2)">
+              <div class="upload-zone-empty"><span class="upload-zone-icon">🏞</span><span class="upload-zone-text">点击上传图片</span></div>
+              <button class="upload-zone-remove" onclick="event.stopPropagation();removeUploadImg(2)">✕</button>
+            </div>
+            <input type="file" id="fileInput2" accept="image/*" style="display:none" onchange="handleFileSelect(2, this)">
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn" onclick="goToStep(1)">← 上一步</button>
+            <button class="step-nav-btn primary-nav" onclick="goToStep(3)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- ═══ Step 3 ═══ -->
+        <div class="step-section" data-step="3" id="stepCard3">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 3  分镜创作</div>
+          </div>
+          <div class="step-card-body">
+            <textarea class="step-text-input" id="step3Text" placeholder="描述每个分镜的画面，比如'镜头1：小猫在森林入口张望'…"></textarea>
+            <button class="step-ai-btn" onclick="aiGenerate(3)"><span class="ai-icon">🤖</span>AI 生图</button>
+            <div class="ai-thinking" id="aiThinking3"><div class="ai-dots"><span></span><span></span><span></span></div> AI 正在理解分镜描述…</div>
+            <div class="storyboard-slots" id="storyboardSlots"></div>
+            <button class="sb-upload-center" onclick="triggerUploadCenter()"><span style="font-size:16px;">🎞</span>分镜 / 图片上传</button>
+            <input type="file" id="fileInput3" accept="image/*" style="display:none" onchange="handleFileSelect(3, this, true)">
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn" onclick="goToStep(2)">← 上一步</button>
+            <button class="step-nav-btn primary-nav" onclick="goToStep(4)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- ═══ Step 4 ═══ -->
+        <div class="step-section" data-step="4" id="stepCard4">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 4  我想要的最终画作</div>
+          </div>
+          <div class="step-card-body">
+            <textarea class="step-text-input" id="step4Text" placeholder="我想要的最终画作……"></textarea>
+            <button class="step-ai-btn" onclick="aiGenerate(4)"><span class="ai-icon">🤖</span>AI 生图</button>
+            <div class="ai-thinking" id="aiThinking4"><div class="ai-dots"><span></span><span></span><span></span></div> AI 正在生成完整画作…</div>
+            <div class="step-upload-zone" id="stepUpload4" onclick="triggerUpload(4)">
+              <div class="upload-zone-empty"><span class="upload-zone-icon">🖼</span><span class="upload-zone-text">点击上传图片</span></div>
+              <button class="upload-zone-remove" onclick="event.stopPropagation();removeUploadImg(4)">✕</button>
+            </div>
+            <input type="file" id="fileInput4" accept="image/*" style="display:none" onchange="handleFileSelect(4, this)">
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn" onclick="goToStep(3)">← 上一步</button>
+            <button class="step-nav-btn primary-nav" onclick="goToStep(5)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- ═══ Step 5 ═══ -->
+        <div class="step-section" data-step="5" id="stepCard5">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 5  描述故事线</div>
+          </div>
+          <div class="step-card-body">
+            <textarea class="step-text-input" id="step5Text" placeholder="用文字描述你的故事：从前有一只小猫，它住在魔法森林里。一天，它发现了一扇神秘的门…" style="min-height:80px;"></textarea>
+            <div class="step-voice-row">
+              <button class="step-voice-btn" id="voiceBtn" onclick="toggleVoice()"><span>🎤</span> 语音输入</button>
+              <span style="font-size:10px;color:var(--muted);">点击录音，说出你的故事</span>
+            </div>
+            <div class="ai-thinking" id="voiceThinking" style="display:none;"><div class="ai-dots"><span></span><span></span><span></span></div> 正在聆听…</div>
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn" onclick="goToStep(4)">← 上一步</button>
+            <button class="step-nav-btn primary-nav" onclick="goToStep(6)">下一步 →</button>
+          </div>
+        </div>
+
+        <!-- ═══ Step 6 ═══ -->
+        <div class="step-section" data-step="6" id="stepCard6">
+          <div class="step-card-header">
+            <div class="step-card-title">Step 6  一键生成动画</div>
+          </div>
+          <div class="step-card-body">
+            <p style="font-size:11px;color:var(--muted);text-align:center;margin:0 0 10px;">完成前5步后，点击下方按钮让AI把你的故事变成动画视频!</p>
+            <button class="i2v-generate-btn" id="i2vGenerateBtn6" onclick="magicGenerate()">
+              <span>🪄</span> 变魔法!一键生成视频
+            </button>
+            <div class="ai-thinking" id="aiThinking6"><div class="ai-dots"><span></span><span></span><span></span></div> AI 正在生成动画视频，请稍候…</div>
+            <div class="i2v-progress-bar" id="i2vProgressWrap6" style="display:none;"><div class="i2v-progress-fill" id="i2vProgressFill6"></div></div>
+            <div class="i2v-video-result" id="i2vVideoResult6">
+              <div class="i2v-video-placeholder">
+                <div class="vr-icon">🎬</div>
+                <div class="vr-text">动画生成完成！</div>
+                <div class="vr-sub">你的作品已就绪</div>
+              </div>
+            </div>
+            <div class="i2v-result-actions" id="i2vVideoActions6" style="display:none;">
+              <button class="r-act primary">⬇ 下载视频</button>
+              <button class="r-act secondary">📤 分享作品</button>
+            </div>
+          </div>
+          <div class="step-nav-row">
+            <button class="step-nav-btn" onclick="goToStep(5)">← 上一步</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- 全屏退出按钮（独立于 overlay 之外，确保点击可靠） -->
+<button class="fs-exit-outer" id="fsExitOuter" onclick="exitFullscreen()" title="退出全屏 (Esc)">✕</button>
+
+<!-- 全屏演示层 -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-topbar">
+    <div class="fs-course" id="fsCourseName">AI 导演课</div>
+    <div class="fs-counter" id="fsCounter">1 / 5</div>
+  </div>
+
+  <button class="fs-arrow fs-arrow-prev" id="fsArrowPrev" onclick="changeSlide(-1)">←</button>
+  <div class="fs-slide-wrap" id="fsSlide"></div>
+  <button class="fs-arrow fs-arrow-next" id="fsArrowNext" onclick="changeSlide(1)">→</button>
+
+  <div class="fs-dots" id="fsDots"></div>
+</div>
+
+<script src="api.js"></script>
+<script>
+/* ─── 幻灯片数据（从 API 动态加载）─── */
+let slides = [];
+let cur = 0;
+let courseName = 'AI 导演课';
+
+function initCourse() {
+  const params = new URLSearchParams(window.location.search);
+  const courseId = params.get('course') || 'course-director';
+
+  if (typeof SparkAPI !== 'undefined') {
+    SparkAPI.getCourse(courseId).then(function(course) {
+      slides = course.slides || [];
+      courseName = course.name;
+      document.getElementById('courseTitle').textContent = courseName;
+      document.getElementById('fsCourseName').textContent = courseName;
+      renderMain();
+    }).catch(function() {
+      slides = [];
+      renderMain();
+    });
+  } else {
+    // Fallback: empty slides if api.js not loaded
+    renderMain();
+  }
+}
+
+/* ─── 渲染幻灯片内容 ─── */
+function slideHTML(slide, big) {
+  const chipsHTML = slide.chips
+    ? `<div class="slide-chips">${slide.chips.map(c=>`<div class="chip"><span>${c[0]}</span>${c[1]}</div>`).join('')}</div>`
+    : '';
+  const codeHTML = slide.code
+    ? `<div class="slide-code">${slide.code}</div>`
+    : '';
+  return `
+    <div class="${big?'fs-slide-inner':'slide-inner'}">
+      <div class="fs-deco" style="${!big?'display:none':''}">${slide.icon}</div>
+      ${!big?`<div class="slide-deco">${slide.icon}</div>`:''}
+      <span class="s-tag ${slide.tagClass||''}">${slide.tag}</span>
+      <h2>${slide.title}</h2>
+      <div class="slide-body">${slide.body}</div>
+      ${chipsHTML}${codeHTML}
+    </div>`;
+}
+
+/* ─── 渲染缩略图 ─── */
+function renderThumbs() {
+  const row = document.getElementById('thumbsRow');
+  const colors = ['#FFD6E8','#B6EDFF','#F8FCAA','#E8DCFF','#B6EDFF'];
+  row.innerHTML = slides.map((s,i) => {
+    const bg = s.thumbColor || colors[i % colors.length];
+    return `<div class="thumb ${i===cur?'active':''}" onclick="goSlide(${i})">
+      <div class="thumb-inner" style="background:${bg};color:#666;">${String(i+1).padStart(2,'0')}<br><span style="font-size:8px;font-weight:600;">${s.icon}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── 渲染主视图 ─── */
+function renderMain() {
+  const s = slides[cur];
+  document.getElementById('mainSlide').innerHTML = slideHTML(s, false);
+  document.getElementById('slideTitle').textContent = s.tag + ' · ' + s.title;
+  document.getElementById('slideCount').textContent = `${cur+1} / ${slides.length}`;
+  document.getElementById('mainCounter').textContent = `${cur+1} / ${slides.length}`;
+  document.getElementById('btnPrev').disabled = cur === 0;
+  document.getElementById('btnNext').disabled = cur === slides.length - 1;
+  renderThumbs();
+}
+
+/* ─── 渲染全屏视图 ─── */
+function renderFS() {
+  const s = slides[cur];
+  document.getElementById('fsSlide').innerHTML = slideHTML(s, true);
+  document.getElementById('fsCounter').textContent = `${cur+1} / ${slides.length}`;
+  document.getElementById('fsArrowPrev').disabled = cur === 0;
+  document.getElementById('fsArrowNext').disabled = cur === slides.length - 1;
+  // 点指示
+  const dots = document.getElementById('fsDots');
+  dots.innerHTML = slides.map((_,i) =>
+    `<div class="fs-dot ${i===cur?'active':''}" onclick="goSlide(${i})"></div>`
+  ).join('');
+}
+
+/* ─── 跳转 / 翻页 ─── */
+function goSlide(n) {
+  cur = Math.max(0, Math.min(n, slides.length - 1));
+  renderMain();
+  if (document.getElementById('fsOverlay').style.display === 'block') renderFS();
+}
+function changeSlide(d) { goSlide(cur + d); }
+
+/* ─── 全屏进入 / 退出 ─── */
+function enterFullscreen() {
+  renderFS();
+  var overlay = document.getElementById('fsOverlay');
+  var exitBtn = document.getElementById('fsExitOuter');
+  if (overlay) overlay.style.display = 'block';
+  if (exitBtn) {
+    exitBtn.style.display = 'flex';
+    exitBtn.onclick = exitFullscreen;
+  }
+  document.body.style.overflow = 'hidden';
+}
+function exitFullscreen() {
+  var overlay = document.getElementById('fsOverlay');
+  var exitBtn = document.getElementById('fsExitOuter');
+  if (overlay) overlay.style.display = 'none';
+  if (exitBtn) exitBtn.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+/* ─── 键盘控制 ─── */
+document.addEventListener('keydown', function(e) {
+  var overlay = document.getElementById('fsOverlay');
+  if (!overlay || overlay.style.display !== 'block') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); changeSlide(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); changeSlide(-1); }
+  if (e.key === 'Escape') { e.preventDefault(); exitFullscreen(); }
+});
+
+/* ─── 点击暗色背景退出全屏 ─── */
+(function() {
+  var overlay = document.getElementById('fsOverlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) exitFullscreen();
+    });
+  }
+})();
+
+/* ─── 备课视频面板 ─── */
+const vpVideos = [
+  { icon:'🎬', title:'导演思维入门讲解', dur:'14:22', sec:862, color:'#FFD6E8' },
+  { icon:'🎥', title:'镜头语言示范课', dur:'11:08', sec:668, color:'#B6EDFF' },
+  { icon:'🪄', title:'AI 图像生成演示', dur:'09:35', sec:575, color:'#F8FCAA' },
+  { icon:'🎵', title:'配音与音效教学', dur:'07:50', sec:470, color:'#E8DCFF' },
+  { icon:'🏆', title:'学生作品展示与点评', dur:'12:17', sec:737, color:'#E4F8E4' }
+];
+let vpCurrentIdx = 0;
+let vpPlaying = false;
+let vpCurrentTime = 0;
+let vpTimer = null;
+
+function toggleVideoPanel() {
+  const panel = document.getElementById('videoPanelOverlay');
+  if (!panel) return;
+  const opening = !panel.classList.contains('show');
+  panel.classList.toggle('show');
+  if (opening) vpUpdatePlayerUI();
+}
+
+function vpSelectVideo(el, idx) {
+  if (vpPlaying) vpStop();
+  vpCurrentIdx = idx;
+  vpCurrentTime = 0;
+  document.querySelectorAll('.video-panel-item').forEach(function(item) { item.classList.remove('active'); });
+  el.classList.add('active');
+  vpUpdatePlayerUI();
+}
+
+function vpUpdatePlayerUI() {
+  const v = vpVideos[vpCurrentIdx];
+  document.getElementById('vpPlayerIcon').textContent = v.icon;
+  document.getElementById('vpPlayerName').textContent = v.title;
+  document.getElementById('vpPlayerMeta').textContent = '王老师 · ' + v.dur;
+  document.getElementById('vpTime').textContent = vpFormatTime(vpCurrentTime) + ' / ' + v.dur;
+  document.getElementById('vpProgressFill').style.width = vpCurrentTime > 0 ? (vpCurrentTime / v.sec * 100) + '%' : '0%';
+  document.getElementById('vpStatus').textContent = vpPlaying ? '播放中' : '就绪';
+  const btn = document.getElementById('vpPlayBtn');
+  const circle = document.getElementById('vpPlayCircle');
+  if (vpPlaying) {
+    btn.textContent = '⏸';
+    btn.classList.add('playing-ctrl');
+    circle.textContent = '⏸';
+  } else {
+    btn.textContent = '▶';
+    btn.classList.remove('playing-ctrl');
+    circle.textContent = '▶';
+  }
+  const player = document.getElementById('vpPlayer');
+  if (vpPlaying) { player.classList.add('playing'); } else { player.classList.remove('playing'); }
+}
+
+function vpTogglePlay() {
+  if (vpPlaying) { vpPause(); } else { vpPlay(); }
+}
+
+function vpPlay() {
+  vpPlaying = true;
+  const v = vpVideos[vpCurrentIdx];
+  if (vpCurrentTime >= v.sec) vpCurrentTime = 0;
+  vpUpdatePlayerUI();
+  vpTimer = setInterval(function() {
+    vpCurrentTime += 0.5;
+    if (vpCurrentTime >= v.sec) {
+      vpCurrentTime = v.sec;
+      vpPause();
+      return;
+    }
+    document.getElementById('vpTime').textContent = vpFormatTime(Math.floor(vpCurrentTime)) + ' / ' + v.dur;
+    document.getElementById('vpProgressFill').style.width = (vpCurrentTime / v.sec * 100) + '%';
+  }, 500);
+}
+
+function vpPause() {
+  vpPlaying = false;
+  if (vpTimer) { clearInterval(vpTimer); vpTimer = null; }
+  vpUpdatePlayerUI();
+}
+
+function vpStop() {
+  vpPause();
+  vpCurrentTime = 0;
+  vpUpdatePlayerUI();
+}
+
+function vpSeek(e) {
+  const bar = e.currentTarget;
+  const rect = bar.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const v = vpVideos[vpCurrentIdx];
+  vpCurrentTime = Math.floor(pct * v.sec);
+  if (vpCurrentTime >= v.sec) vpCurrentTime = v.sec - 1;
+  vpUpdatePlayerUI();
+}
+
+function vpFormatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+/* ─── 手机端魔法工坊折叠 ── */
+function toggleTeacherMagic() {
+  document.getElementById('magicPanel').classList.toggle('expanded');
+}
+
+let currentStep = 1;
+const totalSteps = 6;
+let sbSlotCount = 2;
+const sbSlotsUploaded = {};
+
+function initStoryboardSlots() {
+  const container = document.getElementById('storyboardSlots');
+  container.innerHTML = '';
+  for (let i = 0; i < sbSlotCount; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'sb-slot';
+    slot.setAttribute('data-slot', i);
+    slot.onclick = () => triggerUpload(3, i);
+    const empty = document.createElement('div');
+    empty.className = 'sb-slot-empty';
+    empty.innerHTML = '<span class="sb-slot-num">分镜头 ' + (i + 1) + '</span><span class="sb-slot-icon">📷</span>';
+    slot.appendChild(empty);
+    if (sbSlotsUploaded[i]) {
+      const img = document.createElement('img');
+      img.src = sbSlotsUploaded[i];
+      slot.appendChild(img);
+      slot.classList.add('has-img');
+      const rm = document.createElement('button');
+      rm.className = 'sb-slot-remove';
+      rm.textContent = '✕';
+      rm.onclick = function(e) { e.stopPropagation(); removeSbSlot(i); };
+      slot.appendChild(rm);
+    }
+    container.appendChild(slot);
+  }
+  if (sbSlotCount < 12) {
+    const addBtn = document.createElement('div');
+    addBtn.className = 'add-sb-slot';
+    addBtn.textContent = '+ 添加分镜头';
+    addBtn.onclick = function() { sbSlotCount++; initStoryboardSlots(); };
+    container.appendChild(addBtn);
+  }
+}
+function removeSbSlot(idx) {
+  delete sbSlotsUploaded[idx];
+  const newSlots = {};
+  Object.keys(sbSlotsUploaded).forEach(function(k) {
+    const ki = parseInt(k);
+    if (ki < idx) newSlots[ki] = sbSlotsUploaded[ki];
+    else if (ki > idx) newSlots[ki - 1] = sbSlotsUploaded[ki];
+  });
+  Object.keys(sbSlotsUploaded).forEach(function(k) { delete sbSlotsUploaded[k]; });
+  Object.keys(newSlots).forEach(function(k) { sbSlotsUploaded[k] = newSlots[k]; });
+  sbSlotCount = Math.max(2, sbSlotCount - 1);
+  initStoryboardSlots();
+}
+initStoryboardSlots();
+
+function goToStep(n) {
+  if (n < 1 || n > totalSteps) return;
+  document.querySelectorAll('.step-section').forEach(function(card) { card.classList.remove('active'); });
+  const card = document.getElementById('stepCard' + n);
+  if (card) {
+    card.classList.add('active');
+    card.style.animation = 'none';
+    card.offsetHeight;
+    card.style.animation = '';
+  }
+
+  document.querySelectorAll('.step-col').forEach(function(col) {
+    const s = parseInt(col.dataset.step);
+    const poly = col.querySelector('.step-poly');
+    const label = col.querySelector('.step-label');
+    if (poly) { poly.classList.remove('active', 'done'); if (s === n) poly.classList.add('active'); if (s < n) poly.classList.add('done'); }
+    if (label) label.classList.toggle('active', s === n);
+  });
+  document.querySelectorAll('.step-poly-connector').forEach(function(line) {
+    const l = parseInt(line.dataset.line);
+    line.classList.toggle('done', l < n);
+  });
+
+  const activeCol = document.querySelector('.step-col[data-step="' + n + '"]');
+  const navScroll = document.getElementById('stepNavScroll');
+  if (activeCol && navScroll) {
+    navScroll.scrollTo({ left: activeCol.offsetLeft - navScroll.offsetWidth / 2 + activeCol.offsetWidth / 2, behavior: 'smooth' });
+  }
+
+  currentStep = n;
+  document.getElementById('magicBody').scrollTop = 0;
+}
+
+function triggerUpload(stepNum, sbSlotIdx) {
+  if (stepNum === 3 && sbSlotIdx !== undefined) {
+    const input = document.getElementById('fileInput3');
+    input.setAttribute('data-sb-slot', sbSlotIdx);
+    input.click();
+  } else {
+    const input = document.getElementById('fileInput' + stepNum);
+    if (input) input.click();
+  }
+}
+function triggerUploadCenter() {
+  const input = document.getElementById('fileInput3');
+  input.removeAttribute('data-sb-slot');
+  input.click();
+}
+function handleFileSelect(stepNum, input, isSb) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert('请上传图片文件'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const dataUrl = evt.target.result;
+    if (isSb) {
+      if (input.hasAttribute('data-sb-slot')) {
+        const slotIdx = parseInt(input.getAttribute('data-sb-slot'));
+        sbSlotsUploaded[slotIdx] = dataUrl;
+        input.removeAttribute('data-sb-slot');
+      } else {
+        var added = false;
+        for (var i = 0; i < sbSlotCount; i++) {
+          if (!sbSlotsUploaded[i]) { sbSlotsUploaded[i] = dataUrl; added = true; break; }
+        }
+        if (!added) { sbSlotCount++; sbSlotsUploaded[sbSlotCount - 1] = dataUrl; }
+      }
+      initStoryboardSlots();
+    } else if (stepNum === 1 || stepNum === 2 || stepNum === 4) {
+      const zone = document.getElementById('stepUpload' + stepNum);
+      if (zone) {
+        zone.classList.add('has-img');
+        const empty = zone.querySelector('.upload-zone-empty');
+        if (empty) empty.style.display = 'none';
+        var img = zone.querySelector('img');
+        if (!img) { img = document.createElement('img'); zone.appendChild(img); }
+        img.src = dataUrl;
+      }
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function removeUploadImg(stepNum) {
+  const zone = document.getElementById('stepUpload' + stepNum);
+  if (!zone) return;
+  zone.classList.remove('has-img');
+  var img = zone.querySelector('img');
+  if (img) img.remove();
+  const empty = zone.querySelector('.upload-zone-empty');
+  if (empty) empty.style.display = '';
+}
+
+function aiGenerate(stepNum) {
+  const thinking = document.getElementById('aiThinking' + stepNum);
+  thinking.classList.add('show');
+  const texts = {
+    1: ['AI 正在设计主角形象…', '正在绘制角色细节…', '完成！快看看你的主角吧 ✨'],
+    2: ['AI 正在构思场景…', '正在绘制场景元素…', '场景创作完成！🌳'],
+    3: ['AI 正在理解分镜描述…', '正在逐帧生成画面…', '分镜生成完成！🎞'],
+    4: ['AI 正在整合画作…', '正在细化画面效果…', '完整画作生成！🖼'],
+  };
+  const txts = texts[stepNum] || ['AI 正在处理…', '请稍候…', '完成！'];
+  let pct = 0;
+  const interval = setInterval(function() {
+    pct += Math.random() * 20 + 10;
+    if (pct > 90) pct = 90;
+    const msgIdx = Math.min(txts.length - 1, Math.floor(pct / 33));
+    const textNode = thinking.childNodes[thinking.childNodes.length - 1];
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) textNode.textContent = ' ' + txts[msgIdx];
+  }, 400);
+  setTimeout(function() {
+    clearInterval(interval);
+    const textNode = thinking.childNodes[thinking.childNodes.length - 1];
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) textNode.textContent = ' ' + txts[txts.length - 1];
+    setTimeout(function() {
+      thinking.classList.remove('show');
+      if (stepNum === 1 || stepNum === 2 || stepNum === 4) {
+        const zone = document.getElementById('stepUpload' + stepNum);
+        if (zone && !zone.classList.contains('has-img')) {
+          const colors = ['#FFD6E8','#B6EDFF','#F8FCAA','#E8DCFF','#FFDAB9','#D4F5E0'];
+          const canvas = document.createElement('canvas');
+          canvas.width = 300; canvas.height = 200;
+          const ctx = canvas.getContext('2d');
+          const gradient = ctx.createLinearGradient(0, 0, 300, 200);
+          gradient.addColorStop(0, colors[stepNum % colors.length]);
+          gradient.addColorStop(1, colors[(stepNum + 1) % colors.length]);
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 300, 200);
+          ctx.fillStyle = 'rgba(255,255,255,.4)';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(['👤','🏞','🎞','🖼'][stepNum - 1] || '✨', 150, 110);
+          zone.classList.add('has-img');
+          const empty = zone.querySelector('.upload-zone-empty');
+          if (empty) empty.style.display = 'none';
+          var imgEl = zone.querySelector('img');
+          if (!imgEl) { imgEl = document.createElement('img'); zone.appendChild(imgEl); }
+          imgEl.src = canvas.toDataURL();
+        }
+      }
+    }, 400);
+  }, 2000);
+}
+
+let voiceTimer = null;
+function toggleVoice() {
+  const btn = document.getElementById('voiceBtn');
+  const thinking = document.getElementById('voiceThinking');
+  if (btn.classList.contains('recording')) {
+    clearTimeout(voiceTimer);
+    voiceTimer = null;
+    btn.classList.remove('recording');
+    btn.innerHTML = '<span>🎤</span> 语音输入';
+    thinking.style.display = 'none';
+    const textarea = document.getElementById('step5Text');
+    if (!textarea.value.trim()) {
+      textarea.value = '从前，在一个遥远的魔法森林里，住着一只勇敢的小猫。一天，小猫发现森林深处有一扇闪闪发光的门。它推开门，走进了一个完全不同的世界…';
+    }
+  } else {
+    btn.classList.add('recording');
+    btn.innerHTML = '<span>🔴</span> 录音中…点击停止';
+    thinking.style.display = 'flex';
+  }
+}
+
+function magicGenerate() {
+  const btn = document.getElementById('i2vGenerateBtn6');
+  const thinking = document.getElementById('aiThinking6');
+  const progressWrap = document.getElementById('i2vProgressWrap6');
+  const progressFill = document.getElementById('i2vProgressFill6');
+  const videoResult = document.getElementById('i2vVideoResult6');
+  const videoActions = document.getElementById('i2vVideoActions6');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>🪄</span> 正在施法…';
+  thinking.classList.add('show');
+  progressWrap.style.display = 'block';
+  progressFill.style.width = '0%';
+  videoResult.classList.remove('show');
+  videoActions.style.display = 'none';
+
+  // Collect data from previous steps
+  const prompt = document.getElementById('step5Text').value.trim() || '一个有趣的动画故事';
+  const style = '水彩童话';
+
+  // Start progress bar animation
+  let pct = 0;
+  const interval = setInterval(function() {
+    pct += Math.random() * 8 + 2;
+    if (pct > 90) pct = 90;
+    progressFill.style.width = pct + '%';
+  }, 300);
+
+  // Call the API
+  if (typeof SparkAPI !== 'undefined') {
+    SparkAPI.generateAnimation({ prompt: prompt, style: style }).then(function(res) {
+      clearInterval(interval);
+      progressFill.style.width = '100%';
+      setTimeout(function() {
+        thinking.classList.remove('show');
+        progressWrap.style.display = 'none';
+        videoResult.classList.add('show');
+        videoActions.style.display = 'flex';
+        btn.disabled = false;
+        btn.innerHTML = '<span>🪄</span> 变魔法!一键生成视频';
+      }, 500);
+    }).catch(function() {
+      clearInterval(interval);
+      thinking.classList.remove('show');
+      progressWrap.style.display = 'none';
+      btn.disabled = false;
+      btn.innerHTML = '<span>🪄</span> 变魔法!一键生成视频';
+      alert('生成失败，请重试。\n\nAPI: POST /api/magic/generate');
+    });
+  } else {
+    // Fallback: pure frontend animation if api.js not loaded
+    setTimeout(function() {
+      clearInterval(interval);
+      progressFill.style.width = '100%';
+      setTimeout(function() {
+        thinking.classList.remove('show');
+        progressWrap.style.display = 'none';
+        videoResult.classList.add('show');
+        videoActions.style.display = 'flex';
+        btn.disabled = false;
+        btn.innerHTML = '<span>🪄</span> 变魔法!一键生成视频';
+      }, 600);
+    }, 4000);
+  }
+}
+
+/* 初始化 */
+initCourse();
+</script>
+
+<script>
+/* ── Login guard ── */
+(function() {
+  if (localStorage.getItem("sparkai_role") !== "teacher") {
+    location.href = "login.html?role=teacher";
+  }
+  var sbFoot = document.querySelector(".sb-foot");
+  if (sbFoot) {
+    sbFoot.style.cursor = "pointer";
+    sbFoot.addEventListener("click", function(e) {
+      localStorage.removeItem("sparkai_role");
+      localStorage.removeItem("sparkai_user");
+      localStorage.removeItem("sparkai_session");
+      location.href = "style-final.html";
+    });
+  }
+  /* ─── Step 6 下载 / 分享 ─── */
+  var downloadBtn6 = document.querySelector('#i2vVideoActions6 .r-act.primary');
+  var shareBtn6 = document.querySelector('#i2vVideoActions6 .r-act.secondary');
+  if (downloadBtn6) {
+    downloadBtn6.addEventListener('click', function() {
+      SparkAPI.downloadVideo('latest').then(function(res) { alert('下载链接已生成！\n(后端对接后返回真实下载地址)'); }).catch(function() { alert('下载失败，请重试'); });
+    });
+  }
+  if (shareBtn6) {
+    shareBtn6.addEventListener('click', function() {
+      SparkAPI.shareVideo('latest').then(function(res) { alert('分享链接已生成！\n(后端对接后返回真实分享链接)'); }).catch(function() { alert('分享失败，请重试'); });
+    });
+  }
+})();
+</script>
+</body>
+</html>

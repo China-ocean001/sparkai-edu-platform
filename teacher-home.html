@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkAI · 教师端</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111;
+  --muted:  #666;
+  --border: #EBEBEB;
+  --bg:     #F7F8FA;
+  --pink:   #FFD6E8;
+  --danger: #E05A5A;
+}
+body { font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--dark); display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:220px; flex-shrink:0;
+  background:white; border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; bottom:0; z-index:50;
+}
+.sb-logo {
+  padding:28px 24px 24px;
+  font-size:20px; font-weight:900; letter-spacing:-.5px;
+  border-bottom:1px solid var(--border);
+}
+.sb-logo em { font-style:normal; color:var(--cyan); }
+.sb-section { padding:20px 12px 8px; font-size:11px; font-weight:700;
+  color:#AAA; letter-spacing:1px; text-transform:uppercase; }
+.sb-nav { flex:1; padding:8px 12px; display:flex; flex-direction:column; gap:2px; }
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  font-size:14px; font-weight:600; color:var(--muted);
+  text-decoration:none; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.sb-item:hover { background:#F0FAFB; color:var(--dark); }
+.sb-item.active { background:rgba(182,237,255,.5); color:var(--cyan); font-weight:700; }
+.sb-item .icon {
+  width:34px; height:34px; border-radius:9px;
+  background:#F0F0F0;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:background .15s, color .15s;
+}
+.sb-item.active .icon { background:var(--dark); color:white; }
+.sb-item:hover:not(.active) .icon { background:#E0F8FB; color:var(--cyan); }
+.sb-foot {
+  padding:16px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.sb-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--cyan); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; flex-shrink:0;
+}
+.sb-uname { font-size:13px; font-weight:700; }
+.sb-role  { font-size:11px; color:#AAA; }
+
+/* ── MAIN ── */
+.main { margin-left:220px; flex:1; padding:40px 48px; }
+
+/* 顶部问候 */
+.greeting {
+  display:flex; align-items:flex-end; justify-content:space-between;
+  margin-bottom:36px;
+}
+.greeting h1 { font-size:28px; font-weight:900; letter-spacing:-.5px; }
+.greeting h1 span { color:var(--cyan); }
+.greeting-sub { font-size:14px; color:var(--muted); margin-top:4px; }
+.date-badge {
+  background:white; border:1px solid var(--border);
+  border-radius:12px; padding:8px 16px;
+  font-size:13px; color:var(--muted); font-weight:600;
+}
+
+/* 区块标题行 */
+.sect-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.sect-header h2 { font-size:16px; font-weight:800; }
+.sect-header a  { font-size:13px; color:var(--cyan); font-weight:600; text-decoration:none; }
+
+/* 课程卡片网格 */
+.course-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:44px; }
+.course-card {
+  background:white; border-radius:20px;
+  border:1px solid var(--border);
+  overflow:hidden; cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+}
+.course-card:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(0,0,0,.08); }
+
+.cc-thumb {
+  height:130px; display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.ct-blue   { background: linear-gradient(135deg, #C8F2FF 0%, #9DDFF5 100%); }
+.ct-yellow { background: linear-gradient(135deg, #FDFED5 0%, #F5F9A0 100%); }
+.ct-gray   { background: linear-gradient(135deg, #F4F4F4 0%, #E8E8E8 100%); }
+.ct-pink   { background: linear-gradient(135deg, #FFD6E8 0%, #FFAAD0 100%); }
+.cc-avatar {
+  width:80px; height:80px; border-radius:50%;
+  background:white;
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
+  display:flex; align-items:center; justify-content:center;
+  font-size:38px;
+  transition:transform .2s;
+}
+.course-card:hover .cc-avatar { transform:scale(1.06); }
+
+.cc-body { padding:16px 18px 20px; }
+.cc-tag { font-size:11px; font-weight:700; color:var(--cyan);
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.cc-title { font-size:15px; font-weight:800; margin-bottom:8px; }
+.cc-meta { display:flex; gap:12px; font-size:12px; color:var(--muted); margin-bottom:0; }
+.cc-meta span { display:flex; align-items:center; gap:4px; }
+
+/* 班级卡片 */
+.class-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.class-card {
+  background:white; border-radius:18px;
+  border:1px solid var(--border); padding:22px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; transition:transform .18s, box-shadow .18s;
+}
+.class-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.07); }
+.class-info {}
+.class-name { font-size:17px; font-weight:800; margin-bottom:6px; }
+.class-stats { display:flex; gap:14px; font-size:12px; color:var(--muted); }
+.class-stats span { display:flex; align-items:center; gap:3px; }
+.class-avatars {
+  display:flex; align-items:center; gap:-6px;
+}
+.class-av {
+  width:32px; height:32px; border-radius:50%; border:2px solid white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; margin-left:-8px;
+}
+.class-av:first-child { margin-left:0; }
+.class-action {
+  padding:8px 18px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:12px; font-weight:700; cursor:pointer; color:var(--dark);
+  transition:border-color .15s;
+}
+.class-action:hover { border-color:var(--cyan); color:var(--cyan); }
+
+/* ── RESPONSIVE ── */
+
+/* Tablet: 768px – 1199px */
+@media (min-width:768px) and (max-width:1199px) {
+  .sidebar {
+    width:72px;
+  }
+  .sb-logo {
+    padding:20px 0;
+    font-size:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .sb-logo::after {
+    content:"S";
+    font-size:20px; font-weight:900; color:var(--cyan);
+  }
+  .sb-section {
+    display:none;
+  }
+  .sb-nav {
+    padding:8px 4px;
+    align-items:center;
+  }
+  .sb-item {
+    font-size:0;
+    justify-content:center;
+    padding:10px 0;
+    width:100%;
+  }
+  .sb-item .icon {
+    font-size:14px;
+  }
+  .sb-foot {
+    justify-content:center;
+    padding:12px 0;
+  }
+  .sb-uname, .sb-role {
+    display:none;
+  }
+  .main {
+    margin-left:72px;
+    padding:28px 28px;
+  }
+  .course-grid {
+    grid-template-columns:repeat(2,1fr);
+  }
+  .class-grid {
+    grid-template-columns:1fr;
+  }
+}
+
+/* Mobile: ≤767px */
+@media (max-width:767px) {
+  .sidebar {
+    position:fixed;
+    top:auto; left:0; right:0; bottom:0;
+    width:100%; height:56px;
+    flex-direction:row;
+    border-right:none;
+    border-top:1px solid var(--border);
+    z-index:50;
+  }
+  .sb-logo {
+    display:none;
+  }
+  .sb-nav {
+    flex-direction:row;
+    flex:1;
+    padding:0;
+    gap:0;
+    align-items:stretch;
+  }
+  .sb-section {
+    display:none;
+  }
+  .sb-item {
+    flex:1;
+    justify-content:center;
+    padding:8px 0;
+    font-size:0;
+    border-radius:0;
+  }
+  .sb-item .icon {
+    font-size:14px;
+  }
+  .sb-foot {
+    display:none;
+  }
+  .main {
+    margin-left:0;
+    padding:24px 16px 72px;
+  }
+  .course-grid {
+    grid-template-columns:1fr;
+  }
+  .class-grid {
+    grid-template-columns:1fr;
+  }
+  .greeting h1 {
+    font-size:22px;
+  }
+  .class-card {
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+  }
+}
+
+/* Small Mobile: ≤480px */
+@media (max-width:480px) {
+  .main { padding:18px 10px 68px; }
+  .sidebar { height:52px; }
+  .sb-item { padding:6px 2px; font-size:0; }
+  .sb-item .icon { width:22px; height:22px; font-size:12px; }
+  .greeting h1 { font-size:18px; }
+  .greeting-sub { font-size:11px; }
+  .date-badge { font-size:10px; }
+  .sect-header h2 { font-size:16px; }
+  .course-card { border-radius:16px; }
+  .cc-body { padding:12px 14px; }
+  .cc-title { font-size:14px; }
+  .cc-meta { font-size:11px; }
+  .class-card { padding:14px 16px; border-radius:16px; }
+  .class-name { font-size:15px; }
+  .class-stats { font-size:11px; }
+  .class-action { padding:6px 14px; font-size:11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">Spark<em>AI</em></div>
+  <div class="sb-nav">
+    <div class="sb-section">主菜单</div>
+    <a class="sb-item active" href="teacher-home.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg></span>我的课程
+    </a>
+    <a class="sb-item" href="teacher-class.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/><circle cx="12.5" cy="5.5" r="2"/><path d="M15 14c0-2.2-1.4-3.6-3-4"/></svg></span>班级管理
+    </a>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-avatar">王</div>
+    <div>
+      <div class="sb-uname">王老师</div>
+      <div class="sb-role">机构教师</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- 问候 -->
+  <div class="greeting">
+    <div>
+      <h1>你好，<span>王老师</span> 👋</h1>
+      <div class="greeting-sub" id="greetingSub">正在加载…</div>
+    </div>
+    <div class="date-badge" id="dateBadge"></div>
+  </div>
+
+  <!-- 课程列表 -->
+  <div class="sect-header">
+    <h2>我的课程</h2>
+    <a href="teacher-course.html">进入课程 →</a>
+  </div>
+  <div class="course-grid" id="courseGrid">
+    <div style="padding:20px;color:var(--muted);">正在加载课程…</div>
+  </div>
+
+  <!-- 班级管理 -->
+  <div class="sect-header">
+    <h2>我的班级</h2>
+    <a href="teacher-class.html">管理班级 →</a>
+  </div>
+  <div class="class-grid" id="classGrid">
+    <div style="padding:20px;color:var(--muted);">正在加载班级…</div>
+  </div>
+
+</main>
+
+<script src="api.js"></script>
+<script>
+/* ── 动态加载数据 ── */
+(function() {
+  // Dynamic date
+  var now = new Date();
+  var days = ['日','一','二','三','四','五','六'];
+  document.getElementById('dateBadge').textContent =
+    now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 · 周' + days[now.getDay()];
+
+  if (typeof SparkAPI === 'undefined') return;
+
+  // Load courses and classes in parallel
+  Promise.all([SparkAPI.getCourses(), SparkAPI.getClasses()]).then(function(results) {
+    var courses = results[0];
+    var classes = results[1];
+
+    // Update greeting
+    var totalStudents = classes.reduce(function(sum, c) { return sum + c.studentCount; }, 0);
+    document.getElementById('greetingSub').textContent =
+      '今天共有 ' + classes.length + ' 个班级，' + totalStudents + ' 位同学在学习';
+
+    // Render courses
+    var catColors = { '图形编程':'', '影视创作':'color:#c0407a;', '创意设计':'' };
+    var thumbClasses = ['ct-blue','ct-pink','ct-gray'];
+    var courseGrid = document.getElementById('courseGrid');
+    courseGrid.innerHTML = courses.map(function(c, i) {
+      var boundCount = classes.filter(function(cl) { return cl.boundCourses.indexOf(c.id) !== -1; }).length;
+      var boundText = boundCount > 0 ? '已绑定 ' + boundCount + ' 班' : '未绑定班级';
+      return '<div class="course-card" onclick="location.href=\'teacher-course.html?course=' + c.id + '\'">' +
+        '<div class="cc-thumb ' + (thumbClasses[i] || 'ct-blue') + '">' +
+        '<div class="cc-avatar">' + c.icon + '</div></div>' +
+        '<div class="cc-body">' +
+        '<div class="cc-tag" style="' + (catColors[c.category] || '') + '">' + c.category + '</div>' +
+        '<div class="cc-title">' + c.name + '</div>' +
+        '<div class="cc-meta"><span>' + c.totalLessons + ' 课时</span><span>' + boundText + '</span></div>' +
+        '</div></div>';
+    }).join('');
+
+    // Render classes
+    var avatarColors = ['#B6EDFF','#F8FCAA','#FFD6D6','#E8DCFF','#D4F8E8','#FFF3CC','#FFD6E8','#C8F2FF'];
+    var classGrid = document.getElementById('classGrid');
+    classGrid.innerHTML = classes.map(function(cl) {
+      var avatarsHTML = (cl.studentAvatars || []).slice(0, 3).map(function(av, i) {
+        return '<div class="class-av" style="background:' + avatarColors[i % avatarColors.length] + ';">' + av + '</div>';
+      }).join('');
+      var overflow = cl.studentCount > 3
+        ? '<div class="class-av" style="background:#E8DCFF;font-size:11px;color:#666;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;margin-left:-8px;">+' + (cl.studentCount - 3) + '</div>'
+        : '';
+      return '<div class="class-card" onclick="location.href=\'teacher-class.html\'">' +
+        '<div class="class-info">' +
+        '<div class="class-name">' + cl.name + '</div>' +
+        '<div class="class-stats"><span>👤 ' + cl.studentCount + ' 位同学</span><span>📚 ' + cl.boundCourseNames.length + ' 门课程</span></div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+        '<div class="class-avatars">' + avatarsHTML + overflow + '</div>' +
+        '<button class="class-action" onclick="event.stopPropagation();location.href=\'teacher-class.html\'">管理</button>' +
+        '</div></div>';
+    }).join('');
+  }).catch(function() {
+    document.getElementById('greetingSub').textContent = '数据加载失败，请刷新重试';
+  });
+})();
+</script>
+<script>
+/* ── Login guard ── */
+(function() {
+  if (localStorage.getItem("sparkai_role") !== "teacher") {
+    location.href = "login.html?role=teacher";
+  }
+  // Logout on sidebar foot click
+  var sbFoot = document.querySelector(".sb-foot");
+  if (sbFoot) {
+    sbFoot.style.cursor = "pointer";
+    sbFoot.addEventListener("click", function(e) {
+      localStorage.removeItem("sparkai_role");
+      localStorage.removeItem("sparkai_user");
+      localStorage.removeItem("sparkai_session");
+      location.href = "style-final.html";
+    });
+  }
+})();
+</script>
+</body>
+</html>

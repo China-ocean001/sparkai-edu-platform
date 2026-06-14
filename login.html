@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · SparkAI</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111;
+  --muted:  #666;
+  --border: #EBEBEB;
+  --bg:     #F7F8FA;
+  --pink:   #FFD6E8;
+  --danger: #E05A5A;
+}
+body {
+  font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--dark);
+  min-height:100vh; display:flex; flex-direction:column;
+}
+
+/* ── Top bar ── */
+.top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; height:56px; background:white;
+  border-bottom:1px solid var(--border);
+}
+.logo { font-size:18px; font-weight:900; }
+.logo em { font-style:normal; color:var(--cyan); }
+.back-link {
+  font-size:13px; font-weight:600; color:var(--muted);
+  text-decoration:none; display:flex; align-items:center; gap:6px;
+  transition:color .15s;
+}
+.back-link:hover { color:var(--dark); }
+
+/* ── Main ── */
+.main {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding:40px 24px;
+}
+
+.login-card {
+  width:100%; max-width:420px;
+  background:white; border-radius:24px;
+  border:1px solid var(--border);
+  box-shadow:0 8px 40px rgba(0,0,0,.06);
+  padding:44px 40px 40px;
+  overflow:hidden;
+}
+
+/* ── Role tabs ── */
+.role-tabs {
+  display:flex; background:#F5F5F5; border-radius:12px; padding:4px;
+  margin-bottom:32px;
+}
+.role-tab {
+  flex:1; padding:12px; text-align:center; border-radius:10px;
+  font-size:14px; font-weight:700; cursor:pointer;
+  color:var(--muted); border:none; background:none;
+  transition:all .2s;
+  display:flex; align-items:center; justify-content:center; gap:7px;
+}
+.role-tab .r-icon { font-size:18px; }
+.role-tab.active {
+  background:white; color:var(--dark);
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+/* ── Avatar ── */
+.avatar-wrap {
+  display:flex; justify-content:center; margin-bottom:24px;
+}
+.avatar-circle {
+  width:64px; height:64px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:32px;
+  transition:background .3s, transform .3s;
+}
+.avatar-circle.student { background:var(--blue); }
+.avatar-circle.teacher { background:var(--pink); }
+
+/* ── Form ── */
+.form-group { margin-bottom:16px; }
+.form-label {
+  display:block; font-size:12px; font-weight:700; color:var(--muted);
+  margin-bottom:6px; letter-spacing:.3px;
+}
+.form-input {
+  width:100%; padding:12px 16px; border-radius:12px;
+  border:1.5px solid var(--border); font-size:14px;
+  font-family:inherit; outline:none;
+  transition:border-color .15s, box-shadow .15s;
+  color:var(--dark); background:var(--bg);
+}
+.form-input:focus {
+  border-color:var(--cyan);
+  box-shadow:0 0 0 3px rgba(0,191,207,.12);
+  background:white;
+}
+.form-input.error { border-color:#E05A5A; background:#FFF5F5; }
+
+/* ── Error message ── */
+.error-msg {
+  font-size:12px; font-weight:600; color:#E05A5A;
+  min-height:18px; margin-bottom:4px; text-align:center;
+  transition:opacity .15s;
+}
+
+/* ── Submit button ── */
+.login-btn {
+  width:100%; padding:14px; border-radius:50px; border:none;
+  font-size:15px; font-weight:800; cursor:pointer;
+  color:white; margin-top:4px;
+  transition:opacity .15s, transform .15s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.login-btn.student { background:linear-gradient(135deg, var(--cyan), #00A8B8); box-shadow:0 4px 16px rgba(0,191,207,.3); }
+.login-btn.teacher { background:linear-gradient(135deg, #E05A8A, #C0407A); box-shadow:0 4px 16px rgba(224,90,138,.3); }
+.login-btn:hover { opacity:.9; transform:translateY(-1px); }
+.login-btn:active { transform:translateY(0); }
+
+/* ── Hint ── */
+.login-hint {
+  margin-top:16px; text-align:center; font-size:11px; color:#BBB;
+}
+
+/* ── Welcome text ── */
+.welcome-text {
+  text-align:center; margin-bottom:28px;
+}
+.welcome-text h2 {
+  font-size:22px; font-weight:900; margin-bottom:4px;
+  letter-spacing:-.3px;
+}
+.welcome-text p {
+  font-size:13px; color:var(--muted);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width:767px) {
+  .top-bar { padding:0 16px; height:50px; }
+  .logo { font-size:16px; }
+  .back-link { font-size:12px; }
+  .main { padding:24px 16px; align-items:flex-start; }
+  .login-card { padding:32px 24px 28px; border-radius:20px; }
+  .welcome-text h2 { font-size:20px; }
+}
+
+@media (max-width:480px) {
+  .top-bar { padding:0 12px; height:46px; }
+  .logo { font-size:15px; }
+  .login-card { padding:24px 18px 22px; border-radius:18px; }
+  .welcome-text h2 { font-size:18px; }
+  .role-tab { padding:10px; font-size:13px; }
+  .role-tab .r-icon { font-size:16px; }
+  .form-input { padding:10px 14px; font-size:13px; }
+  .login-btn { padding:12px; font-size:14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div class="logo">Spark<em>AI</em></div>
+  <a href="style-final.html" class="back-link">← 返回首页</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="login-card">
+
+    <!-- Role tabs -->
+    <div class="role-tabs">
+      <button class="role-tab active" id="tabStudent" onclick="switchRole('student')">
+        <span class="r-icon">🧒</span> 我是小学生
+      </button>
+      <button class="role-tab" id="tabTeacher" onclick="switchRole('teacher')">
+        <span class="r-icon">👩‍🏫</span> 我是教师
+      </button>
+    </div>
+
+    <!-- Avatar -->
+    <div class="avatar-wrap">
+      <div class="avatar-circle student" id="avatarCircle">🧒</div>
+    </div>
+
+    <!-- Welcome -->
+    <div class="welcome-text">
+      <h2 id="welcomeTitle">小同学，欢迎回来！</h2>
+      <p id="welcomeSub">输入账号密码，开始学习之旅</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Form -->
+    <div class="form-group">
+      <label class="form-label">账号</label>
+      <input class="form-input" type="text" id="username" placeholder="请输入账号" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">密码</label>
+      <input class="form-input" type="password" id="password" placeholder="请输入密码">
+    </div>
+
+    <button class="login-btn student" id="loginBtn" onclick="doLogin()">
+      <span>🔑</span> 登 录
+    </button>
+
+    <div class="login-hint" id="loginHint">默认账号：student · 密码：123</div>
+
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+let currentRole = 'student';
+
+// Read role from URL
+const params = new URLSearchParams(window.location.search);
+const urlRole = params.get('role');
+if (urlRole === 'teacher') {
+  currentRole = 'teacher';
+}
+
+function switchRole(role) {
+  currentRole = role;
+  const tabS = document.getElementById('tabStudent');
+  const tabT = document.getElementById('tabTeacher');
+  const ava = document.getElementById('avatarCircle');
+  const btn = document.getElementById('loginBtn');
+  const title = document.getElementById('welcomeTitle');
+  const sub = document.getElementById('welcomeSub');
+  const hint = document.getElementById('loginHint');
+  const err = document.getElementById('errorMsg');
+
+  if (role === 'student') {
+    tabS.classList.add('active');
+    tabT.classList.remove('active');
+    ava.className = 'avatar-circle student';
+    ava.textContent = '🧒';
+    btn.className = 'login-btn student';
+    title.textContent = '小同学，欢迎回来！';
+    sub.textContent = '输入账号密码，开始学习之旅';
+    hint.textContent = '默认账号：student · 密码：123';
+  } else {
+    tabT.classList.add('active');
+    tabS.classList.remove('active');
+    ava.className = 'avatar-circle teacher';
+    ava.textContent = '👩‍🏫';
+    btn.className = 'login-btn teacher';
+    title.textContent = '老师好，欢迎回来！';
+    sub.textContent = '输入账号密码，进入管理后台';
+    hint.textContent = '默认账号：teacher · 密码：123';
+  }
+  err.textContent = '';
+  document.getElementById('username').classList.remove('error');
+  document.getElementById('password').classList.remove('error');
+}
+
+function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const err = document.getElementById('errorMsg');
+  const uEl = document.getElementById('username');
+  const pEl = document.getElementById('password');
+  const btn = document.getElementById('loginBtn');
+
+  uEl.classList.remove('error');
+  pEl.classList.remove('error');
+  err.textContent = '';
+
+  if (!username) {
+    err.textContent = '请输入账号';
+    uEl.classList.add('error');
+    uEl.focus();
+    return;
+  }
+  if (!password) {
+    err.textContent = '请输入密码';
+    pEl.classList.add('error');
+    pEl.focus();
+    return;
+  }
+
+  // 使用 Mock API 登录（同时保留本地 fallback）
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  err.textContent = '登录中…';
+  err.style.color = 'var(--muted)';
+
+  if (typeof SparkAPI !== 'undefined') {
+    SparkAPI.login(currentRole, username, password).then(function(res) {
+      localStorage.setItem('sparkai_role', res.role);
+      localStorage.setItem('sparkai_user', username);
+      err.style.color = '#4CAF50';
+      err.textContent = '登录成功！正在跳转...';
+      setTimeout(function() {
+        location.href = res.role === 'student' ? 'student-home.html' : 'teacher-home.html';
+      }, 600);
+    }).catch(function(e) {
+      err.textContent = e.message || '账号或密码错误';
+      err.style.color = '#E05A5A';
+      uEl.classList.add('error');
+      pEl.classList.add('error');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    });
+  } else {
+    // Fallback: 本地验证
+    if (currentRole === 'student' && username === 'student' && password === '123') {
+      localStorage.setItem('sparkai_role', 'student');
+      localStorage.setItem('sparkai_user', username);
+      err.style.color = '#4CAF50';
+      err.textContent = '登录成功！正在跳转...';
+      setTimeout(function() { location.href = 'student-home.html'; }, 600);
+    } else if (currentRole === 'teacher' && username === 'teacher' && password === '123') {
+      localStorage.setItem('sparkai_role', 'teacher');
+      localStorage.setItem('sparkai_user', username);
+      err.style.color = '#4CAF50';
+      err.textContent = '登录成功！正在跳转...';
+      setTimeout(function() { location.href = 'teacher-home.html'; }, 600);
+    } else {
+      err.textContent = '账号或密码错误，请重试';
+      err.style.color = '#E05A5A';
+      uEl.classList.add('error');
+      pEl.classList.add('error');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+// Enter key triggers login
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+// Initialize with URL role
+switchRole(currentRole);
+</script>
+</body>
+</html>

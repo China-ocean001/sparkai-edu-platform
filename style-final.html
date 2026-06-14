@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkAI · AI 编程学习平台</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111111;
+  --muted:  #5A5A5A;
+  --bg:     #FFFFFF;
+  --border: #EBEBEB;
+  --pink:   #FFD6E8;
+  --danger: #E05A5A;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background: var(--bg); color: var(--dark); overflow-x: hidden;
+}
+
+/* ─── NAV ─────────────────────────────────────────────── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  display: flex; align-items:center; justify-content:space-between;
+  padding: 0 60px; height: 60px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.logo { font-size:20px; font-weight:900; letter-spacing:-.5px; }
+.logo em { font-style:normal; color: var(--cyan); }
+.nav-signin {
+  padding: 8px 20px; border-radius:50px;
+  border: 1.5px solid #D0D0D0; background:white;
+  font-size:13px; font-weight:600; cursor:pointer; color:var(--dark);
+  transition: border-color .2s;
+}
+.nav-signin:hover { border-color:#888; }
+
+/* ═══════════════════════════════════════════════════════
+   FLOW WRAP — hero + band 共用一条贯通渐变
+══════════════════════════════════════════════════════════ */
+.flow-wrap {
+  background: linear-gradient(180deg,
+    rgba(248,252,170,.18)  0%,
+    rgba(255,255,255,1)    18%,
+    rgba(255,255,255,1)    44%,
+    rgba(182,237,255,.42)  56%,
+    rgba(182,237,255,.55)  63%,
+    rgba(248,252,170,.52)  80%,
+    rgba(182,237,255,.32)  100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   HERO — 全居中，浮动卡片做背景装饰
+══════════════════════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 100px 60px 80px;
+  overflow: hidden;
+  background: transparent;
+}
+.hero-glow {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  filter: blur(60px);
+}
+.hg1 { width:480px;height:480px; background:rgba(182,237,255,.45); top:-80px; right:-60px; }
+.hg2 { width:400px;height:400px; background:rgba(248,252,170,.45); bottom:-60px; left:-40px; }
+
+/* ── 浮动卡片（作为背景层） ── */
+.hero-cards {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.hc {
+  position: absolute; border-radius: 18px; background: white;
+  box-shadow: 0 8px 32px rgba(0,0,0,.08);
+  animation: bob 7s ease-in-out infinite;
+}
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+/* 课程进度卡 */
+.hc-course {
+  width: 200px; top: 18%; left: 6%;
+  padding: 18px 20px;
+  border-top: 4px solid var(--cyan);
+  animation-duration: 6s;
+}
+.hc-course .ct { font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:.5px;margin-bottom:6px; }
+.hc-course .cn { font-size:14px;font-weight:800;color:var(--dark);margin-bottom:10px; }
+.hc-course .cb { height:5px;border-radius:50px;background:#EEE;margin-bottom:4px; }
+.hc-course .cf { height:5px;border-radius:50px;background:var(--cyan);width:60%; }
+.hc-course .cs { font-size:11px;color:#AAA; }
+
+/* 学生提问气泡 */
+.hc-q {
+  width: 200px; bottom: 28%; left: 5%;
+  padding: 14px 16px;
+  background: var(--blue);
+  border-radius: 18px 18px 4px 18px;
+  animation-duration: 8s; animation-delay: 1s;
+}
+.hc-q p  { font-size:12px;font-weight:600;color:#1a6c7a;line-height:1.5; }
+.hc-q .qn{ font-size:10px;color:#5aacbd;margin-top:5px;font-weight:700; }
+
+/* AI 回复气泡 */
+.hc-a {
+  width: 185px; top: 22%; right: 5%;
+  padding: 14px 16px;
+  background: var(--yellow);
+  border-radius: 18px 18px 18px 4px;
+  animation-duration: 9s; animation-delay: 2s;
+}
+.hc-a p  { font-size:12px;font-weight:600;color:#7a6e00;line-height:1.5; }
+.hc-a .an{ font-size:10px;color:#a09300;margin-top:5px;font-weight:700; }
+
+/* 散落装饰符 */
+.hc-sym {
+  position: absolute; font-weight: 800; pointer-events: none;
+  animation: bob 5s ease-in-out infinite;
+}
+.hc-sym img {
+  display:block; width:28px; height:28px; object-fit:contain;
+}
+.hs1 { font-size:20px;color:rgba(0,191,207,.4); top:15%;left:32%; animation-delay:.4s; }
+.hs2 { font-size:16px;color:rgba(200,180,0,.4); top:12%;right:30%; animation-delay:1.6s; }
+.hs3 { font-size:14px;color:rgba(255,122,92,.4); bottom:20%;left:38%; animation-delay:2.8s; }
+.hs4 { font-size:18px;color:rgba(155,127,232,.4);bottom:18%;right:28%;animation-delay:3.5s; }
+
+/* ── 童趣浮动气泡（统一风格） ── */
+.ft-bubble {
+  position: absolute; pointer-events: none; z-index: 1;
+  background: rgba(255,255,255,.78); backdrop-filter:blur(12px);
+  border:1.5px solid rgba(0,0,0,.05);
+  border-radius:24px; padding:20px 24px;
+  font-size:18px; font-weight:600; color:#555;
+  line-height:1.55; max-width:260px;
+  box-shadow:0 6px 22px rgba(0,0,0,.05);
+  animation: ftFade 6s ease-in-out infinite;
+}
+.ft-bubble .b-icon {
+  display:inline-block; margin-right:4px; font-size:20px;
+}
+.ft-bubble .b-icon img {
+  width:24px; height:24px; object-fit:contain; vertical-align:middle;
+}
+@keyframes ftFade {
+  0%,100% { opacity: .5;  transform: translateY(0); }
+  50%     { opacity: .92; transform: translateY(-7px); }
+}
+
+.ft-b1 { top: 52%; left: 3%;  animation-delay: 0s; }
+.ft-b2 { top: 55%; right: 2%;  animation-delay: 1.8s; }
+.ft-b3 { top: 72%; right: 2%;  animation-delay: .9s; }
+.ft-b4 { top: 75%; left: 2%;   animation-delay: 2.8s; }
+
+/* ── 童趣小精灵（可爱角色） ── */
+.ft-sprite {
+  position: absolute; pointer-events: none; z-index: 1;
+  width:68px; height:68px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:38px;
+  animation: spriteHop 4.5s ease-in-out infinite;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.08));
+}
+.ft-sprite img {
+  width:100%; height:100%; object-fit:contain;
+  border-radius:50%;
+}
+@keyframes spriteHop {
+  0%,100% { opacity: .45; transform: translateY(0) rotate(0deg) scale(1); }
+  30%     { opacity: .9;  transform: translateY(-14px) rotate(6deg) scale(1.12); }
+  60%     { opacity: .55; transform: translateY(3px) rotate(-4deg) scale(.95); }
+}
+
+.sp1 { top: 49%; left: 1%;   animation-delay: 0s; }
+.sp2 { top: 52%; right: 0%;  animation-delay: 1.3s; }
+.sp3 { top: 69%; right: 0%;  animation-delay: 2.5s; }
+.sp4 { top: 72%; left: 0%;   animation-delay: .6s;  }
+.sp5 { top: 58%; left: 20%;  animation-delay: 3s;   width:58px; height:58px; font-size:32px; }
+.sp5 img { width:100%; height:100%; object-fit:contain; border-radius:50%; }
+.sp6 { top: 62%; right: 10%; animation-delay: 1.8s; width:58px; height:58px; font-size:32px; }
+.sp6 img { width:100%; height:100%; object-fit:contain; border-radius:50%; }
+
+/* 精灵光环底色 */
+.sp1::before, .sp2::before, .sp3::before, .sp4::before, .sp5::before, .sp6::before {
+  content:''; position:absolute; inset:0; border-radius:50%; z-index:-1;
+}
+.sp1::before { background:rgba(182,237,255,.35); }
+.sp2::before { background:rgba(248,252,170,.35); }
+.sp3::before { background:rgba(255,214,232,.35); }
+.sp4::before { background:rgba(200,230,255,.35); }
+.sp5::before { background:rgba(255,214,232,.3); }
+.sp6::before { background:rgba(248,252,170,.3); }
+
+/* ── 星星点 ── */
+.ft-star {
+  position: absolute; pointer-events: none; z-index: 1;
+  font-weight: 800; font-size: 12px;
+  animation: ftPulse 3.5s ease-in-out infinite;
+}
+.ft-star img {
+  display:block; width:18px; height:18px; object-fit:contain;
+}
+@keyframes ftPulse {
+  0%,100% { opacity: .2; transform: scale(1); }
+  50%     { opacity: .6; transform: scale(1.4); }
+}
+.ft-s1 { top:56%; left:14%; color:rgba(0,191,207,.38); animation-delay:.3s; }
+.ft-s2 { top:68%; right:5%; color:rgba(200,180,0,.35); animation-delay:1.6s; }
+.ft-s3 { top:54%; left:26%; color:rgba(255,122,92,.3); animation-delay:2.8s; }
+.hero-center { position: relative; z-index: 3; max-width: 580px; }
+.hero-eyebrow {
+  display: inline-flex; align-items:center; gap:8px;
+  background: var(--yellow); color:#555;
+  padding: 5px 16px; border-radius:50px;
+  font-size:12px; font-weight:700; letter-spacing:.3px;
+  margin-bottom: 28px;
+}
+.hero-eyebrow .dot { width:7px;height:7px;border-radius:50%;background:var(--cyan); }
+
+.hero h1 {
+  font-size: clamp(40px, 5.5vw, 68px);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -2px;
+  color: var(--dark);
+  margin-bottom: 20px;
+}
+.hero h1 .accent { color: var(--cyan); }
+
+.hero-sub {
+  font-size: 16px; color: var(--muted);
+  line-height: 1.8; margin-bottom: 44px;
+}
+.cta-row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.btn-primary {
+  padding: 16px 48px; border-radius:50px; border:none;
+  background: var(--dark); color:white;
+  font-size:15px; font-weight:700; cursor:pointer;
+  box-shadow: 0 4px 18px rgba(0,0,0,.18);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(0,0,0,.22); }
+.btn-secondary {
+  padding: 16px 48px; border-radius:50px;
+  border: 1.5px solid #CACACA; background:white;
+  font-size:15px; font-weight:700; cursor:pointer; color:var(--dark);
+  transition: border-color .2s, transform .15s;
+}
+.btn-secondary:hover { border-color:#777; transform:translateY(-2px); }
+
+/* ═══════════════════════════════════════════════════════
+   BAND — 横向滚动 banner（背景由 flow-wrap 承担）
+══════════════════════════════════════════════════════════ */
+.band {
+  padding: 80px 0 0;
+  background: transparent;
+  text-align: center;
+  overflow: hidden;
+}
+.band-text { padding: 0 60px 52px; }
+.band h2 {
+  font-size: clamp(28px, 3.6vw, 46px);
+  font-weight: 900; line-height: 1.28;
+  letter-spacing: -1px; margin-bottom: 12px;
+}
+.band-sub {
+  font-size: 15px; color: var(--muted); line-height: 1.7;
+}
+
+/* ── 横向滚动 banner ── */
+.banner-wrap {
+  position: relative;
+  padding-bottom: 52px;
+}
+/* 左右渐隐 */
+.banner-wrap::before,
+.banner-wrap::after {
+  content: '';
+  position: absolute; top: 0; bottom: 52px; width: 80px; z-index: 5;
+  pointer-events: none;
+}
+.banner-wrap::before {
+  left: 0;
+  background: linear-gradient(to right,
+    rgba(196,242,230,.75) 0%, transparent 100%);
+}
+.banner-wrap::after {
+  right: 0;
+  background: linear-gradient(to left,
+    rgba(220,245,200,.75) 0%, transparent 100%);
+}
+
+.banner-scroll {
+  display: flex; gap: 20px;
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 0 60px 24px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.banner-scroll::-webkit-scrollbar { display: none; }
+
+.banner-card {
+  flex-shrink: 0;
+  width: 280px;
+  scroll-snap-align: start;
+  border-radius: 20px; padding: 28px 24px 26px;
+  background: white;
+  box-shadow: 0 4px 24px rgba(0,0,0,.07);
+  text-align: left;
+  transition: transform .2s, box-shadow .2s;
+  cursor: default;
+}
+.banner-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(0,0,0,.11); }
+
+.bc-icon-wrap {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 24px; margin-bottom: 14px;
+}
+.banner-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.banner-card p  { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+/* 滚动指示点 */
+.banner-dots {
+  display: flex; gap: 6px; justify-content: center;
+}
+.bdot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(0,0,0,.15); cursor: pointer;
+  transition: background .2s, width .2s;
+}
+.bdot.active { background: var(--cyan); width: 20px; border-radius: 50px; }
+
+/* 滚动箭头 */
+.banner-arrows {
+  display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;
+}
+.barrow {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,.15); background: white;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 14px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.barrow:hover { border-color: var(--cyan); background: rgba(182,237,255,.3); }
+
+/* ═══════════════════════════════════════════════════════
+   STEAM STRIP — 分割带
+══════════════════════════════════════════════════════════ */
+.steam-strip {
+  background: white;
+  border-top: 1px solid rgba(0,0,0,.06);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: 48px 60px 44px;
+}
+.steam-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.steam-header .ai-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 800; color: var(--cyan);
+  background: rgba(182,237,255,.4);
+  padding: 5px 16px; border-radius: 50px; margin-bottom: 12px;
+}
+.steam-header h3 {
+  font-size: clamp(22px, 2.8vw, 34px);
+  font-weight: 900; letter-spacing: -1px; margin-bottom: 6px;
+}
+.steam-header p { font-size: 14px; color: var(--muted); }
+
+.steam-items {
+  display: flex; gap: 0;
+  border-radius: 20px; overflow: hidden;
+  border: 1px solid rgba(0,0,0,.07);
+  max-width: 900px; margin: 0 auto;
+}
+.steam-item {
+  flex: 1; padding: 28px 20px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  border-right: 1px solid rgba(0,0,0,.06);
+  transition: background .2s;
+  cursor: default;
+}
+.steam-item:last-child { border-right: none; }
+.steam-item:hover { background: #FAFFFE; }
+
+.steam-letter {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 26px; font-weight: 900; line-height: 1;
+}
+.sl-s { background: var(--blue);   color: #0077a0; }
+.sl-t { background: var(--yellow); color: #7a6e00; }
+.sl-e { background: #FFD6E8;       color: #c0006a; }
+.sl-a { background: #E8DCFF;       color: #5400c8; }
+.sl-m { background: #D4F5E0;       color: #006a2e; }
+
+.steam-name  { font-size: 14px; font-weight: 800; color: var(--dark); }
+.steam-sub   { font-size: 11px; color: var(--muted); letter-spacing: .3px; }
+
+/* ═══════════════════════════════════════════════════════
+   ENTRY — 全宽左右分割
+══════════════════════════════════════════════════════════ */
+.entry-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 520px;
+  /* 学生侧蓝 → 中间自然渐变 → 教师侧黄 */
+  background: linear-gradient(to right,
+    #B6EDFF 0%,
+    #DCF4DD 50%,
+    #F8FCAA 100%);
+}
+.es-panel {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+  padding: 56px 60px; cursor: pointer;
+  background: transparent;
+}
+.es-panel::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(to top, rgba(0,0,0,.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.es-student { background: transparent; }
+.es-teacher { background: transparent; }
+
+.es-illustration {
+  position: absolute; inset: 0;
+  display: flex; align-items:center; justify-content:flex-end;
+  padding-right: 20px; padding-bottom: 80px;
+}
+.es-illustration img { width: 78%; max-width: 380px; height: auto; object-fit:contain; }
+.es-illustration svg { width: 78%; max-width: 380px; height: auto; opacity: .88; }
+
+.es-content { position: relative; z-index: 2; }
+.es-label {
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 10px; display: block; opacity: .6;
+}
+.es-panel h2 {
+  font-size: clamp(26px, 2.8vw, 36px);
+  font-weight: 900; line-height: 1.2;
+  letter-spacing: -1px; margin-bottom: 8px; color: var(--dark);
+}
+.es-panel p {
+  font-size: 14px; color: #444; line-height: 1.65;
+  max-width: 300px; margin-bottom: 28px;
+}
+.es-btn {
+  display: inline-flex; align-items:center; gap: 8px;
+  padding: 13px 32px; border-radius: 50px;
+  border: 1.5px solid rgba(0,0,0,.14);
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  background: white; color: var(--dark);
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.es-btn:hover { transform: translateY(-2px); border-color: rgba(0,0,0,.28); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.es-btn .arrow {
+  display: inline-flex; align-items:center; justify-content:center;
+  width: 22px; height: 22px; border-radius: 50%; font-size: 12px;
+  transition: transform .15s;
+}
+.es-btn:hover .arrow { transform: translateX(3px); }
+.es-student .es-btn { box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+.es-student .es-btn .arrow { background: rgba(0,0,0,.07); }
+.es-teacher .es-btn { box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.es-teacher .es-btn .arrow { background: rgba(0,0,0,.07); }
+.es-deco-circle { position:absolute; border-radius:50%; pointer-events:none; opacity:.18; }
+.es-student .es-deco-circle { width:260px;height:260px;background:white;top:-60px;right:-60px; }
+.es-teacher .es-deco-circle { width:200px;height:200px;background:rgba(0,0,0,.06);bottom:-50px;left:-50px; }
+
+/* ─── FOOTER ─────────────────────────────────────────────── */
+footer {
+  padding: 24px 60px;
+  border-top: 1px solid rgba(0,0,0,.06);
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 12px; color: #BBB;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — Tablet  768px – 1199px
+══════════════════════════════════════════════════════════ */
+@media (max-width: 1199px) {
+  /* NAV */
+  nav { padding: 0 32px; }
+
+  /* HERO */
+  .hero { padding: 80px 32px 60px; }
+  .hc-course { display: none; }
+  .hc-q      { display: none; }
+  .hc-a      { display: none; }
+  .hc-sym    { display: none; }
+  .hero-center { max-width: 500px; }
+
+  /* BAND */
+  .band-text { padding: 0 32px 40px; }
+  .banner-scroll { padding: 0 32px 20px; }
+  .banner-card { width: 240px; padding: 22px 18px 20px; }
+
+  /* STEAM */
+  .steam-strip { padding: 36px 32px 32px; }
+  .steam-items { max-width: 100%; }
+  .steam-item  { padding: 20px 12px; }
+  .steam-name  { font-size: 12px; }
+
+  /* ENTRY */
+  .es-panel { padding: 40px 32px; }
+
+  /* FOOTER */
+  footer { padding: 20px 32px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — Mobile  ≤ 767px
+══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* NAV */
+  nav {
+    padding: 0 20px;
+    height: 52px;
+  }
+  .logo { font-size: 17px; }
+  .nav-signin { padding: 6px 14px; font-size: 12px; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: auto;
+    padding: 80px 20px 52px;
+  }
+  /* hide ALL floating cards, glows, and symbols */
+  .hc-course,
+  .hc-q,
+  .hc-a,
+  .hc-sym    { display: none; }
+  .ft-bubble, .ft-star, .ft-sprite { display: none; }
+  .hg1, .hg2 { display: none; }
+
+  .hero-center { max-width: 100%; }
+
+  .hero h1 {
+    font-size: clamp(30px, 8vw, 44px);
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+  .hero-eyebrow { font-size: 11px; margin-bottom: 18px; }
+  .hero-sub { font-size: 14px; margin-bottom: 32px; }
+
+  /* CTA buttons: stacked, full-width */
+  .cta-row {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  /* ── BAND ── */
+  .band { padding: 52px 0 0; }
+  .band-text { padding: 0 20px 32px; }
+  .band h2 { font-size: clamp(22px, 6vw, 32px); }
+  .band-sub { font-size: 13px; }
+
+  /* banner cards: narrower, still horizontally scrollable */
+  .banner-scroll { padding: 0 20px 16px; gap: 14px; }
+  .banner-card { width: 220px; padding: 18px 16px 16px; }
+  .banner-card h3 { font-size: 14px; }
+  .banner-card p  { font-size: 12px; }
+  .bc-icon-wrap { width: 40px; height: 40px; font-size: 20px; margin-bottom: 10px; }
+
+  /* ── STEAM ── */
+  .steam-strip { padding: 32px 20px 28px; }
+  .steam-header h3 { font-size: clamp(18px, 5vw, 26px); }
+  /* wrap into 2-3 columns so text doesn't overflow */
+  .steam-items {
+    flex-wrap: wrap;
+    border-radius: 16px;
+  }
+  .steam-item {
+    flex: 1 1 33%;
+    min-width: 80px;
+    padding: 16px 8px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .steam-item:nth-child(3) { border-right: none; }
+  .steam-item:last-child   { border-bottom: none; }
+  .steam-letter { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; }
+  .steam-name   { font-size: 12px; }
+  .steam-sub    { font-size: 10px; }
+
+  /* ── ENTRY — single column, stacked vertically ── */
+  .entry-split {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    background: linear-gradient(180deg, #B6EDFF 0%, #DCF4DD 50%, #F8FCAA 100%);
+  }
+  .es-panel {
+    padding: 200px 24px 36px;   /* top padding makes room for the illustration above */
+    min-height: 340px;
+  }
+  .es-illustration {
+    padding-bottom: 0; padding-right: 16px;
+    top: 24px;
+    bottom: auto;
+    height: 190px;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+  .es-illustration img, .es-illustration svg { width: 65%; max-width: 230px; }
+  .es-panel h2 { font-size: clamp(22px, 6vw, 30px); margin-bottom: 6px; }
+  .es-panel p  { font-size: 13px; margin-bottom: 20px; max-width: 100%; }
+  .es-btn { width: 100%; justify-content: center; padding: 12px 24px; }
+  /* hide decorative circles on mobile */
+  .es-deco-circle { display: none; }
+
+  /* ── FOOTER ── */
+  footer {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    padding: 18px 20px;
+  }
+}
+
+/* Small Mobile: ≤480px */
+@media (max-width: 480px) {
+  nav { padding: 0 14px; height: 48px; }
+  .logo { font-size: 15px; }
+  .nav-signin { padding: 5px 12px; font-size: 11px; }
+
+  .hero { padding: 64px 16px 40px; }
+  .hero-eyebrow { font-size: 10px; margin-bottom: 14px; }
+  .hero-sub { font-size: 13px; margin-bottom: 24px; }
+  .hero-title-img { width: clamp(240px, 80vw, 320px); }
+  .btn-primary, .btn-secondary { padding: 12px 20px; font-size: 13px; }
+
+  .band { padding: 42px 0 0; }
+  .band-text { padding: 0 14px 24px; }
+  .band h2 { font-size: clamp(18px, 7vw, 26px); }
+  .band-sub { font-size: 12px; }
+  .banner-scroll { padding: 0 14px 12px; gap: 10px; }
+  .banner-card { width: 180px; padding: 14px 12px 12px; }
+  .banner-card h3 { font-size: 13px; }
+  .banner-card p { font-size: 11px; }
+  .bc-icon-wrap { width: 34px; height: 34px; font-size: 17px; }
+
+  .steam-strip { padding: 24px 14px 20px; }
+  .steam-header h3 { font-size: clamp(16px, 6vw, 22px); }
+  .steam-letter { width: 36px; height: 36px; font-size: 18px; }
+  .steam-name { font-size: 11px; }
+  .steam-sub { font-size: 9px; }
+
+  .es-panel { padding: 170px 16px 28px; min-height: 300px; }
+  .es-panel h2 { font-size: clamp(18px, 7vw, 26px); }
+  .es-panel p { font-size: 12px; }
+  .es-illustration { height: 160px; padding-right: 10px; justify-content: flex-end; }
+  .es-illustration img, .es-illustration svg { max-width: 180px; width: 62%; }
+  .es-btn { padding: 10px 20px; font-size: 13px; }
+
+  footer { padding: 14px 14px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Spark<em>AI</em></div>
+  <button class="nav-signin" onclick="location.href='login.html'">登录</button>
+</nav>
+
+<!-- ════════════════ HERO + BAND（共用贯通渐变）════════════════ -->
+<div class="flow-wrap">
+
+<!-- ════════════════ HERO ════════════════ -->
+<section class="hero">
+  <!-- 背景光晕 -->
+  <div class="hero-glow hg1"></div>
+  <div class="hero-glow hg2"></div>
+
+  <!-- 浮动卡片（背景层） -->
+  <div class="hero-cards">
+    <!-- 课程进度卡 -->
+    <div class="hc hc-course">
+      <div class="ct">今日课程</div>
+      <div class="cn">Scratch 动画制作</div>
+      <div class="cb"><div class="cf"></div></div>
+      <div class="cs">已完成 60%</div>
+    </div>
+    <!-- 学生提问 -->
+    <div class="hc hc-q">
+      <p>这段代码为什么会一直循环？🤔</p>
+      <div class="qn">小明 · 三年级2班</div>
+    </div>
+    <!-- AI 回复 -->
+    <div class="hc hc-a">
+      <p>因为循环条件一直为真！试试改成这样…</p>
+      <div class="an">AI 助手</div>
+    </div>
+    <!-- 飘散符号 -->
+    <span class="hc-sym hs1"><img src="icons-small/yellow-2.png" alt=""></span>
+    <span class="hc-sym hs2"><img src="icons-small/cyan.png" alt=""></span>
+    <span class="hc-sym hs3"><img src="icons-small/orange-2.png" alt=""></span>
+    <span class="hc-sym hs4"><img src="icons-small/blue-light.png" alt=""></span>
+
+    <!-- 童趣浮动气泡（统一风格） -->
+    <div class="ft-bubble ft-b1"><span class="b-icon"><img src="icons-small/yellow-1.png" alt=""></span>一个项目制 AI 教育系统，孩子用 AI 创造真实作品。</div>
+    <div class="ft-bubble ft-b2"><span class="b-icon"><img src="icons-small/cyan.png" alt=""></span>好奇心，是最好的算法。<br><span style="font-size:10px;color:#999;font-style:italic;">Curiosity is the best algorithm.</span></div>
+    <div class="ft-bubble ft-b3"><span class="b-icon"><img src="icons-small/green.png" alt=""></span>从自己的想象开始…<br>设计情节 + AI生图 + 配音 + 配乐</div>
+    <div class="ft-bubble ft-b4"><span class="b-icon"><img src="icons-small/orange.png" alt=""></span>在 SparkAI，每个孩子<br>都是小小的创造者。</div>
+
+    <!-- 星星 -->
+    <span class="ft-star ft-s1"><img src="icons-small/blue-dark.png" alt=""></span>
+    <span class="ft-star ft-s2"><img src="icons-small/pink-2.png" alt=""></span>
+    <span class="ft-star ft-s3"><img src="icons-small/blue-tall.png" alt=""></span>
+
+    <!-- 童趣小精灵（可爱角色） -->
+    <div class="ft-sprite sp1"><img src="icons-final/yellow-1.png" alt=""></div>
+    <div class="ft-sprite sp2"><img src="icons-final/orange.png" alt=""></div>
+    <div class="ft-sprite sp3"><img src="icons-final/blue-round.png" alt=""></div>
+    <div class="ft-sprite sp4"><img src="icons-final/pink-1.png" alt=""></div>
+    <div class="ft-sprite sp5"><img src="icons-final/green.png" alt=""></div>
+    <div class="ft-sprite sp6"><img src="icons-final/purple.png" alt=""></div>
+  </div>
+
+  <!-- 居中文字 -->
+  <div class="hero-center">
+    <div class="hero-eyebrow">
+      <span class="dot"></span>AI 编程教育平台 · 1–4 年级
+    </div>
+    <h1>
+      用 AI 一起<br>
+      <span class="accent">探索编程</span><br>
+      的无限可能
+    </h1>
+    <p class="hero-sub">
+      专为小学生设计的课程学习与 AI 对话平台。<br>
+      老师轻松备课管班级，学生快乐学、随时问。
+    </p>
+    <div class="cta-row">
+      <button class="btn-primary" onclick="location.href='login.html?role=student'">我是小同学</button>
+      <button class="btn-secondary" onclick="location.href='login.html?role=teacher'">我是老师</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ BAND ════════════════ -->
+<section class="band">
+  <div class="band-text">
+    <h2>老师和同学，<br>各有专属空间</h2>
+    <p class="band-sub">平台权限清晰，学习体验专注，管理轻松高效。</p>
+  </div>
+
+  <div class="banner-wrap">
+    <div class="banner-scroll" id="bannerScroll">
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:rgba(182,237,255,.5);">📖</div>
+        <h3>课程 PPT 学习</h3>
+        <p>学生专属课程浏览，全屏翻页，专注不分心。老师另有备课视频。</p>
+      </div>
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:rgba(248,252,170,.6);">💬</div>
+        <h3>AI 随时对话</h3>
+        <p>师生各有独立 AI 区，学生随时发问，老师备课高效辅助。</p>
+      </div>
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:#F0F0F0;">🏫</div>
+        <h3>班级一键管理</h3>
+        <p>创建班级、添加学生账号、绑定课程，老师全流程掌控。</p>
+      </div>
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:#FFD6E8;">🎬</div>
+        <h3>AI 导演课</h3>
+        <p>用 AI 把图片变成动画片，学生在创作中理解科技与艺术的交汇。</p>
+      </div>
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:#E8DCFF;">🎨</div>
+        <h3>创意像素画</h3>
+        <p>用编程画出自己的想象，像素世界里探索艺术与逻辑的结合。</p>
+      </div>
+
+      <div class="banner-card">
+        <div class="bc-icon-wrap" style="background:#D4F5E0;">🐍</div>
+        <h3>Python 基础</h3>
+        <p>从游戏开始学编程，轻松迈入文本编程世界，培养逻辑思维。</p>
+      </div>
+
+    </div>
+
+    <div class="banner-arrows">
+      <button class="barrow" onclick="scrollBanner(-1)">←</button>
+      <button class="barrow" onclick="scrollBanner(1)">→</button>
+    </div>
+    <div class="banner-dots">
+      <div class="bdot active" onclick="goSlide(0)"></div>
+      <div class="bdot" onclick="goSlide(1)"></div>
+      <div class="bdot" onclick="goSlide(2)"></div>
+      <div class="bdot" onclick="goSlide(3)"></div>
+      <div class="bdot" onclick="goSlide(4)"></div>
+      <div class="bdot" onclick="goSlide(5)"></div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /flow-wrap -->
+
+<!-- ════════════════ STEAM STRIP ════════════════ -->
+<section class="steam-strip">
+  <div class="steam-header">
+    <div class="ai-tag">✦ AI ＋ STEAM</div>
+    <h3>覆盖全领域的 AI 融合课程</h3>
+    <p>科学 · 技术 · 工程 · 艺术 · 数学，五大方向一站学习</p>
+  </div>
+  <div class="steam-items">
+    <div class="steam-item">
+      <div class="steam-letter sl-s">S</div>
+      <div class="steam-name">Science</div>
+      <div class="steam-sub">科学</div>
+    </div>
+    <div class="steam-item">
+      <div class="steam-letter sl-t">T</div>
+      <div class="steam-name">Technology</div>
+      <div class="steam-sub">技术</div>
+    </div>
+    <div class="steam-item">
+      <div class="steam-letter sl-e">E</div>
+      <div class="steam-name">Engineering</div>
+      <div class="steam-sub">工程</div>
+    </div>
+    <div class="steam-item">
+      <div class="steam-letter sl-a">A</div>
+      <div class="steam-name">Art</div>
+      <div class="steam-sub">艺术</div>
+    </div>
+    <div class="steam-item">
+      <div class="steam-letter sl-m">M</div>
+      <div class="steam-name">Mathematics</div>
+      <div class="steam-sub">数学</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ ENTRY ════════════════ -->
+<section style="position:relative;">
+  <div class="entry-split">
+
+    <!-- 学生面板 -->
+    <div class="es-panel es-student">
+      <div class="es-deco-circle"></div>
+      <div class="es-illustration">
+        <img src="entry-student.png" alt="学生入口">
+      </div>
+      <div class="es-content">
+        <span class="es-label">学生入口</span>
+        <h2>小同学，<br>今天学什么？</h2>
+        <p>查看老师分配的课程，随时翻阅 PPT，探索编程的乐趣。</p>
+        <button class="es-btn" onclick="location.href='login.html?role=student'">
+          开始学习 <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 教师面板 -->
+    <div class="es-panel es-teacher">
+      <div class="es-deco-circle"></div>
+      <div class="es-illustration">
+        <img src="entry-teacher.png" alt="教师入口">
+      </div>
+      <div class="es-content">
+        <span class="es-label">教师入口</span>
+        <h2>老师好，<br>管理您的课堂</h2>
+        <p>查看课程与备课视频，管理班级和学生，轻松掌控每一堂课。</p>
+        <button class="es-btn" onclick="location.href='login.html?role=teacher'">
+          进入教师端 <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <span>© 2025 SparkAI · AI 编程教育平台</span>
+  <span>专为小学 1–4 年级设计</span>
+</footer>
+
+<script>
+const scroll = document.getElementById('bannerScroll');
+const dots   = document.querySelectorAll('.bdot');
+const cardW  = 300; // card 280 + gap 20
+
+function scrollBanner(dir) {
+  scroll.scrollBy({ left: dir * cardW, behavior: 'smooth' });
+}
+function goSlide(i) {
+  scroll.scrollTo({ left: i * cardW, behavior: 'smooth' });
+}
+scroll.addEventListener('scroll', () => {
+  const idx = Math.round(scroll.scrollLeft / cardW);
+  dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+});
+
+/* ── Login state ── */
+(function() {
+  const btn = document.querySelector('.nav-signin');
+  if (!btn) return;
+  const role = localStorage.getItem('sparkai_role');
+  if (role) {
+    const uname = localStorage.getItem('sparkai_user') || role;
+    btn.textContent = uname === 'teacher' ? '王老师 · 退出' : '小明同学 · 退出';
+    btn.onclick = function() {
+      localStorage.removeItem('sparkai_role');
+      localStorage.removeItem('sparkai_user');
+      localStorage.removeItem('sparkai_session');
+      location.reload();
+    };
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkAI · 我的课程</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111;
+  --muted:  #666;
+  --border: #EBEBEB;
+  --pink:   #FFD6E8;
+  --bg:     #F7F8FA;
+  --danger: #E05A5A;
+}
+body { font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:white; color:var(--dark); min-height:100vh; }
+
+/* ── TOP NAV ── */
+nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 48px; height:60px;
+  background:white; border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:50;
+}
+.logo { font-size:20px; font-weight:900; }
+.logo em { font-style:normal; color:var(--cyan); }
+.nav-user {
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; font-weight:600;
+}
+.user-av {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--blue); display:flex; align-items:center; justify-content:center;
+  font-size:16px;
+}
+
+/* ── HERO GREETING ── */
+.hero-greeting {
+  background: linear-gradient(135deg,
+    rgba(248,252,170,.35) 0%,
+    rgba(255,255,255,1) 50%,
+    rgba(182,237,255,.35) 100%);
+  padding:52px 60px 44px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.greet-text h1 {
+  font-size:clamp(32px,4vw,48px); font-weight:900;
+  line-height:1.2; letter-spacing:-1px; margin-bottom:10px;
+}
+.greet-text h1 .wave { display:inline-block; animation:wave 2s ease-in-out infinite; }
+@keyframes wave { 0%,100%{transform:rotate(0)} 30%{transform:rotate(20deg)} 60%{transform:rotate(-10deg)} }
+.greet-text p { font-size:16px; color:var(--muted); line-height:1.6; }
+
+/* 右侧小统计 */
+.greet-stats {
+  display:flex; gap:16px;
+}
+.stat-pill {
+  background:white; border:1px solid var(--border);
+  border-radius:16px; padding:14px 20px; text-align:center;
+  min-width:90px;
+}
+.stat-num { font-size:24px; font-weight:900; color:var(--cyan); line-height:1; }
+.stat-lbl { font-size:11px; color:var(--muted); margin-top:4px; font-weight:600; }
+
+/* ── COURSES ── */
+.section { padding:44px 60px; }
+.section-title {
+  font-size:18px; font-weight:900; margin-bottom:24px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-title .badge {
+  background:var(--yellow); color:#7a6e00;
+  padding:2px 10px; border-radius:50px;
+  font-size:12px; font-weight:700;
+}
+
+.cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+
+.course-card {
+  border-radius:24px; overflow:hidden; cursor:pointer;
+  border:1px solid rgba(0,0,0,.06);
+  transition:transform .2s, box-shadow .2s;
+  background:white;
+}
+.course-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.1); }
+
+.card-thumb {
+  height:150px; display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden; cursor:pointer;
+}
+.ct-blue   { background: linear-gradient(135deg, #B6EDFF 0%, #88DDFF 100%); }
+.ct-yellow { background: linear-gradient(135deg, #F8FCAA 0%, #F0E870 100%); }
+.ct-pink   { background: linear-gradient(135deg, #FFD6E8 0%, #FFAAD0 100%); }
+
+/* 圆形标识 */
+.card-avatar {
+  width:80px; height:80px; border-radius:50%;
+  background:white; box-shadow:0 4px 20px rgba(0,0,0,.12);
+  display:flex; align-items:center; justify-content:center;
+  font-size:38px; position:relative; z-index:1;
+  transition:transform .2s, box-shadow .2s;
+}
+.course-card:hover .card-avatar {
+  transform:scale(1.08);
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+}
+/* 悬停时在缩略图区域显示进入提示 */
+.card-thumb-hint {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.0);
+  display:flex; align-items:flex-end; justify-content:flex-end;
+  padding:10px; transition:background .2s;
+}
+.course-card:hover .card-thumb-hint { background:rgba(0,0,0,.04); }
+.thumb-enter {
+  width:28px; height:28px; border-radius:50%;
+  background:rgba(255,255,255,.85); border:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; color:var(--dark);
+  opacity:0; transform:scale(.7); transition:opacity .2s, transform .2s;
+}
+.course-card:hover .thumb-enter { opacity:1; transform:scale(1); }
+
+/* 卡片主体 */
+.card-body { padding:18px 20px 22px; }
+.card-label { font-size:11px; font-weight:700; color:var(--cyan);
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.card-title { font-size:17px; font-weight:900; margin-bottom:8px; line-height:1.2; }
+.card-lessons { font-size:13px; color:var(--muted); margin-bottom:16px; }
+
+/* 进度条 */
+.progress-wrap { margin-bottom:16px; }
+.progress-label { display:flex; justify-content:space-between;
+  font-size:12px; color:var(--muted); margin-bottom:5px; }
+.progress-bar { background:#F0F0F0; border-radius:50px; height:6px; }
+.progress-fill { border-radius:50px; height:6px; background:var(--cyan); }
+
+.card-btn {
+  width:100%; padding:11px; border-radius:50px;
+  border:1.5px solid #DDD; background:white; color:var(--dark);
+  font-size:14px; font-weight:700; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.card-btn:hover { border-color:#AAA; background:#F7F7F7; }
+
+/* 空状态 */
+.card-new {
+  border-radius:24px; border:2px dashed #DDD;
+  height:100%; min-height:280px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:12px;
+  color:#CCC; cursor:default;
+  padding:24px;
+}
+.card-new .new-icon { font-size:36px; opacity:.5; }
+.card-new p { font-size:13px; text-align:center; line-height:1.5; }
+
+/* 底部 */
+footer {
+  padding:24px 60px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between;
+  font-size:12px; color:#CCC;
+}
+
+/* ── RESPONSIVE ── */
+
+/* Tablet: 768px – 1199px */
+@media (max-width:1199px) and (min-width:768px) {
+  nav { padding:0 28px; }
+  .hero-greeting { padding:36px 32px 28px; }
+  .section { padding:32px 32px; }
+  footer { padding:20px 32px; }
+  .cards-grid { grid-template-columns:repeat(2,1fr); }
+}
+
+/* Mobile: ≤767px */
+@media (max-width:767px) {
+  /* Nav: logo + avatar only */
+  nav { padding:0 16px; }
+  .nav-user span { display:none; }
+
+  /* Hero: stack vertically, text above stats below */
+  .hero-greeting {
+    flex-direction:column;
+    align-items:flex-start;
+    gap:20px;
+    padding:24px 16px 20px;
+  }
+  .greet-stats { flex-wrap:wrap; gap:10px; }
+  .stat-pill { min-width:72px; padding:10px 14px; }
+
+  /* Courses section */
+  .section { padding:24px 16px; }
+  .cards-grid { grid-template-columns:1fr; }
+
+  /* Hide placeholder "new" card */
+  .card-new { display:none; }
+
+  /* Footer: stacked */
+  footer {
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:16px;
+    text-align:center;
+  }
+}
+
+/* Small Mobile: ≤480px */
+@media (max-width:480px) {
+  nav { padding:0 12px; }
+  .logo { font-size:15px; }
+  .hero-greeting { padding:20px 12px 16px; gap:16px; }
+  .greet-text h1 { font-size:20px; }
+  .greet-text p { font-size:12px; }
+  .stat-pill { min-width:60px; padding:8px 12px; }
+  .stat-num { font-size:20px; }
+  .stat-lbl { font-size:11px; }
+  .section { padding:20px 12px; }
+  .section-title { font-size:16px; }
+  .course-card { border-radius:16px; }
+  .card-body { padding:12px 14px; }
+  .card-title { font-size:14px; }
+  .card-label { font-size:10px; }
+  .card-lessons { font-size:11px; }
+  .progress-label { font-size:10px; }
+  .card-thumb { height:100px; }
+  .card-avatar { font-size:28px; }
+  footer { padding:14px 12px; font-size:11px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Spark<em>AI</em></div>
+  <div class="nav-user">
+    <div class="user-av">🐼</div>
+    <span>小明同学</span>
+  </div>
+</nav>
+
+<!-- 问候横幅 -->
+<div class="hero-greeting">
+  <div class="greet-text">
+    <h1>你好，<span id="studentName">小明</span> <span class="wave">👋</span></h1>
+    <p id="studentInfo">正在加载…</p>
+  </div>
+  <div class="greet-stats" id="greetStats">
+    <div class="stat-pill">
+      <div class="stat-num">-</div>
+      <div class="stat-lbl">门课程</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num">-</div>
+      <div class="stat-lbl">已完成</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" style="color:#c8b400;">★</div>
+      <div class="stat-lbl">继续加油</div>
+    </div>
+  </div>
+</div>
+
+<!-- 课程列表 -->
+<section class="section">
+  <div class="section-title">
+    我的课程
+    <span class="badge" id="courseCount">-</span>
+  </div>
+  <div class="cards-grid" id="courseCards">
+    <div style="padding:20px;color:var(--muted);">正在加载课程…</div>
+  </div>
+</section>
+
+<footer>
+  <span>© 2025 SparkAI</span>
+  <span>三年级2班 · 小明同学</span>
+</footer>
+
+<script src="api.js"></script>
+<script>
+/* ── 动态加载数据 ── */
+(function() {
+  var session = JSON.parse(localStorage.getItem('sparkai_session') || '{}');
+  if (session.name) document.getElementById('studentName').textContent = session.name;
+
+  if (typeof SparkAPI === 'undefined') {
+    document.getElementById('studentInfo').textContent = '无法加载数据';
+    return;
+  }
+
+  SparkAPI.getCourses().then(function(courses) {
+    var count = courses.length;
+    document.getElementById('courseCount').textContent = count + ' 门';
+    document.getElementById('studentInfo').textContent = '今天继续学习吧，加油！';
+
+    // Update stats
+    var statsHtml = '<div class="stat-pill"><div class="stat-num">' + count + '</div><div class="stat-lbl">门课程</div></div>' +
+      '<div class="stat-pill"><div class="stat-num">-</div><div class="stat-lbl">已完成</div></div>' +
+      '<div class="stat-pill"><div class="stat-num" style="color:#c8b400;">★</div><div class="stat-lbl">继续加油</div></div>';
+    document.getElementById('greetStats').innerHTML = statsHtml;
+
+    // Course card config
+    var cardConfig = {
+      'course-scratch': { href:'student-learning.html', thumbClass:'ct-blue', labelColor:'' },
+      'course-director': { href:'course-director.html', thumbClass:'ct-pink', labelColor:'color:#c0407a;' },
+      'course-pixel': { href:'student-learning.html', thumbClass:'ct-gray', labelColor:'' }
+    };
+
+    var defaultProgress = { 'course-scratch':60, 'course-director':30, 'course-pixel':0 };
+    var progressColors = { 'course-scratch':'', 'course-director':'background:#e05a8a;', 'course-pixel':'' };
+
+    var html = courses.map(function(c) {
+      var cfg = cardConfig[c.id] || { href:'student-learning.html', thumbClass:'ct-blue', labelColor:'' };
+      var prog = defaultProgress[c.id] || 0;
+      var progColor = progressColors[c.id] || '';
+      return '<div class="course-card" onclick="location.href=\'' + cfg.href + '\'">' +
+        '<div class="card-thumb ' + cfg.thumbClass + '">' +
+        '<div class="card-avatar">' + c.icon + '</div>' +
+        '<div class="card-thumb-hint"><div class="thumb-enter">→</div></div></div>' +
+        '<div class="card-body">' +
+        '<div class="card-label" style="' + cfg.labelColor + '">' + c.category + '</div>' +
+        '<div class="card-title">' + c.name + '</div>' +
+        '<div class="card-lessons">共 ' + c.totalLessons + ' 课时</div>' +
+        (prog > 0 ? '<div class="progress-wrap"><div class="progress-label"><span>学习进度</span><span>' + prog + '%</span></div>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + prog + '%;' + progColor + '"></div></div></div>' : '') +
+        '</div></div>';
+    }).join('');
+
+    // Add placeholder card
+    html += '<div class="card-new"><div class="new-icon">📭</div><p>还没有更多课程<br>等老师给你安排吧！</p></div>';
+
+    document.getElementById('courseCards').innerHTML = html;
+  }).catch(function() {
+    document.getElementById('courseCards').innerHTML = '<div style="padding:20px;color:var(--muted);">加载失败，请刷新重试</div>';
+  });
+})();
+</script>
+<script>
+/* ── Login guard ── */
+(function() {
+  if (localStorage.getItem("sparkai_role") !== "student") {
+    location.href = "login.html?role=student";
+  }
+  // Logout on nav user click
+  const navUser = document.querySelector(".nav-user");
+  if (navUser) {
+    navUser.style.cursor = "pointer";
+    navUser.addEventListener("click", function() {
+      localStorage.removeItem("sparkai_role");
+      localStorage.removeItem("sparkai_user");
+      localStorage.removeItem("sparkai_session");
+      location.href = "style-final.html";
+    });
+  }
+})();
+</script>
+</body>
+</html>

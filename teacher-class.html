@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SparkAI · 班级管理</title>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --blue:   #B6EDFF;
+  --yellow: #F8FCAA;
+  --cyan:   #00BFCF;
+  --dark:   #111;
+  --muted:  #666;
+  --border: #EBEBEB;
+  --bg:     #F7F8FA;
+  --pink:   #FFD6E8;
+  --danger: #E05A5A;
+}
+body { font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg); color:var(--dark); display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:220px; flex-shrink:0; background:white;
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; bottom:0; z-index:50;
+}
+.sb-logo { padding:28px 24px 24px; font-size:20px; font-weight:900;
+  letter-spacing:-.5px; border-bottom:1px solid var(--border); }
+.sb-logo em { font-style:normal; color:var(--cyan); }
+.sb-section { padding:20px 12px 8px; font-size:11px; font-weight:700;
+  color:#AAA; letter-spacing:1px; text-transform:uppercase; }
+.sb-nav { flex:1; padding:8px 12px; display:flex; flex-direction:column; gap:2px; }
+.sb-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  font-size:14px; font-weight:600; color:var(--muted);
+  text-decoration:none; cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.sb-item:hover { background:#F0FAFB; color:var(--dark); }
+.sb-item.active { background:rgba(182,237,255,.5); color:var(--cyan); font-weight:700; }
+.sb-item .icon {
+  width:34px; height:34px; border-radius:9px;
+  background:#F0F0F0;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:background .15s, color .15s;
+}
+.sb-item.active .icon { background:var(--dark); color:white; }
+.sb-item:hover:not(.active) .icon { background:#E0F8FB; color:var(--cyan); }
+.sb-foot { padding:16px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:10px; }
+.sb-avatar { width:36px; height:36px; border-radius:50%; background:var(--cyan); color:white;
+  display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; }
+.sb-uname { font-size:13px; font-weight:700; }
+.sb-role  { font-size:11px; color:#AAA; }
+
+/* ── MAIN ── */
+.main { margin-left:220px; flex:1; padding:36px 44px; }
+
+/* 页头 */
+.page-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:32px;
+}
+.page-header h1 { font-size:26px; font-weight:900; letter-spacing:-.5px; margin-bottom:4px; }
+.page-header p  { font-size:14px; color:var(--muted); }
+
+/* 课程选择 Tab */
+.course-tabs {
+  display:flex; gap:8px; margin-bottom:24px;
+}
+.ctab {
+  padding:8px 20px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:13px; font-weight:700; color:var(--muted); cursor:pointer;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.ctab.active {
+  background:var(--blue); border-color:var(--blue); color:#007a8c;
+}
+.ctab:hover:not(.active) { border-color:#AAA; color:var(--dark); }
+
+/* 课程信息卡 */
+.course-info-card {
+  background:white; border-radius:20px; border:1px solid var(--border);
+  padding:24px 28px; margin-bottom:24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.cic-left h2 { font-size:20px; font-weight:900; margin-bottom:6px; }
+.cic-stats { display:flex; gap:20px; font-size:13px; color:var(--muted); }
+.cic-stats span { display:flex; align-items:center; gap:4px; }
+.cic-right { display:flex; gap:10px; flex-shrink:0; }
+.cic-btn {
+  padding:8px 18px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:12px; font-weight:700; cursor:pointer; color:var(--dark);
+  transition:border-color .15s;
+}
+.cic-btn:hover { border-color:var(--cyan); color:var(--cyan); }
+.cic-btn.danger { color:var(--danger); border-color:var(--danger); }
+.cic-btn.danger:hover { background:rgba(255,90,90,.08); }
+
+.action-btns { display:flex; gap:6px; }
+.ab {
+  padding:5px 12px; border-radius:8px;
+  border:1px solid var(--border); background:white;
+  font-size:11px; font-weight:700; cursor:pointer; color:var(--muted);
+  transition:border-color .15s, color .15s;
+}
+.ab:hover { border-color:var(--cyan); color:var(--cyan); }
+.ab.del:hover { border-color:var(--danger); color:var(--danger); }
+.btn-add-s {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 16px; border-radius:50px; border:1.5px solid var(--border);
+  background:white; font-size:12px; font-weight:700; cursor:pointer; color:var(--dark);
+  transition:border-color .15s, background .15s;
+}
+.btn-add-s:hover { border-color:var(--cyan); color:var(--cyan); }
+.btn-new {
+  display:flex; align-items:center; gap:8px;
+  padding:11px 22px; border-radius:50px; border:none;
+  background:var(--dark); color:white;
+  font-size:13px; font-weight:700; cursor:pointer;
+  transition:opacity .15s;
+}
+.btn-new:hover { opacity:.8; }
+.add-form {
+  background:white; border-radius:20px;
+  border:2px dashed var(--cyan); padding:24px 28px;
+  margin-bottom:24px; display:none;
+}
+.add-form h3 { font-size:15px; font-weight:800; margin-bottom:16px; color:var(--cyan); }
+.form-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+.form-group label { display:block; font-size:11px; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.form-group input {
+  width:100%; padding:10px 14px; border-radius:12px;
+  border:1.5px solid var(--border); font-size:13px; font-family:inherit; outline:none;
+  transition:border-color .15s;
+}
+.form-group input:focus { border-color:var(--cyan); }
+.form-actions { display:flex; gap:10px; }
+.fa-submit {
+  padding:10px 24px; border-radius:50px; border:none;
+  background:var(--cyan); color:white;
+  font-size:13px; font-weight:700; cursor:pointer;
+}
+.fa-cancel {
+  padding:10px 24px; border-radius:50px;
+  border:1.5px solid var(--border); background:white;
+  font-size:13px; font-weight:700; cursor:pointer; color:var(--muted);
+}
+
+/* 班级列表 */
+.class-list {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
+  margin-bottom:24px;
+}
+.class-card {
+  background:white; border-radius:16px; border:2px solid var(--border);
+  padding:18px 20px; cursor:pointer; transition:border-color .15s;
+}
+.class-card:hover { border-color:var(--blue); }
+.class-card.active { border-color:var(--cyan); background:rgba(182,237,255,.1); }
+.class-card h3 { font-size:15px; font-weight:800; margin-bottom:6px; }
+.class-card p { font-size:12px; color:var(--muted); }
+.class-card .class-badge {
+  display:inline-block; padding:3px 10px; border-radius:50px;
+  background:#F4F4F4; font-size:11px; font-weight:600; color:var(--muted);
+  margin-top:8px;
+}
+
+/* 区块标题行 */
+.sect-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.sect-row h3 { font-size:15px; font-weight:800; }
+
+/* 学生表格 */
+.stu-table {
+  background:white; border-radius:20px;
+  border:1px solid var(--border); overflow:hidden;
+  margin-bottom:32px;
+}
+.stu-table table { width:100%; border-collapse:collapse; }
+.stu-table th {
+  padding:12px 20px; text-align:left;
+  font-size:11px; font-weight:800; color:#AAA; letter-spacing:.5px; text-transform:uppercase;
+  background:#FAFAFA; border-bottom:1px solid var(--border);
+}
+.stu-table td {
+  padding:14px 20px; font-size:13px;
+  border-bottom:1px solid var(--border);
+}
+.stu-table tr:last-child td { border-bottom:none; }
+.stu-table tr:hover td { background:#FAFFFE; }
+
+.stu-name-cell { display:flex; align-items:center; gap:10px; }
+.stu-av {
+  width:32px; height:32px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px;
+}
+.stu-av-name { font-weight:700; }
+.stu-av-class { font-size:11px; color:var(--muted); }
+
+.code-pill {
+  display:inline-block; background:#F4F4F4; color:#333;
+  padding:3px 10px; border-radius:6px;
+  font-family:monospace; font-size:12px;
+}
+.status-dot {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:600;
+}
+.dot-green { width:7px;height:7px;border-radius:50%;background:#4CAF50;display:inline-block; }
+.dot-gray  { width:7px;height:7px;border-radius:50%;background:#CCC;display:inline-block; }
+
+/* ── RESPONSIVE ── */
+
+/* Desktop: ≥1200px (默认样式) */
+
+/* Tablet: 768px – 1199px */
+@media (min-width:768px) and (max-width:1199px) {
+  .sidebar {
+    width:72px;
+  }
+  .sb-logo {
+    padding:20px 0;
+    font-size:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .sb-logo::after {
+    content:"S";
+    font-size:20px; font-weight:900; color:var(--cyan);
+  }
+  .sb-section {
+    display:none;
+  }
+  .sb-nav {
+    padding:8px 4px;
+    align-items:center;
+  }
+  .sb-item {
+    font-size:0;
+    justify-content:center;
+    padding:10px 0;
+    width:100%;
+  }
+  .sb-item .icon {
+    font-size:14px;
+  }
+  .sb-foot {
+    justify-content:center;
+    padding:12px 0;
+  }
+  .sb-uname, .sb-role {
+    display:none;
+  }
+  .main {
+    margin-left:72px;
+    padding:28px 28px;
+  }
+  .class-list {
+    grid-template-columns:1fr;
+  }
+  .page-header h1 { font-size:22px; }
+  .page-header p { font-size:13px; }
+}
+
+/* Mobile: ≤767px */
+@media (max-width:767px) {
+  .sidebar {
+    position:fixed;
+    top:auto; left:0; right:0; bottom:0;
+    width:100%; height:56px;
+    flex-direction:row;
+    border-right:none;
+    border-top:1px solid var(--border);
+    z-index:50;
+  }
+  .sb-logo {
+    display:none;
+  }
+  .sb-nav {
+    flex-direction:row;
+    flex:1;
+    padding:0;
+    gap:0;
+    align-items:stretch;
+  }
+  .sb-section {
+    display:none;
+  }
+  .sb-item {
+    flex:1;
+    justify-content:center;
+    padding:8px 0;
+    font-size:0;
+    border-radius:0;
+  }
+  .sb-item .icon {
+    font-size:14px;
+  }
+  .sb-foot {
+    display:none;
+  }
+  .main {
+    margin-left:0;
+    padding:20px 14px 72px;
+  }
+  .class-list {
+    grid-template-columns:1fr;
+  }
+  .page-header {
+    flex-direction:column;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .page-header h1 { font-size:20px; }
+  .page-header p { font-size:13px; }
+  .course-tabs {
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .ctab {
+    padding:6px 14px;
+    font-size:12px;
+  }
+  .stu-table {
+    overflow-x:auto;
+  }
+  .stu-table table {
+    min-width:600px;
+  }
+  .add-form { padding:18px 16px; border-radius:16px; }
+  .form-row { grid-template-columns:1fr; }
+  .form-actions { flex-direction:column; }
+  .fa-submit, .fa-cancel { width:100%; text-align:center; }
+  .btn-new { width:100%; justify-content:center; }
+  .cic-right { flex-wrap:wrap; width:100%; }
+  .cic-btn { flex:1; justify-content:center; text-align:center; }
+  .course-info-card { flex-direction:column; align-items:flex-start; gap:12px; padding:18px 20px; }
+  .page-header { flex-direction:column; gap:12px; align-items:flex-start; }
+}
+
+/* Small Mobile: ≤480px */
+@media (max-width:480px) {
+  .main { padding:16px 10px 68px; }
+  .sidebar { height:52px; }
+  .sb-item { padding:6px 2px; font-size:0; }
+  .sb-item .icon { width:22px; height:22px; font-size:12px; }
+  .page-header h1 { font-size:18px; }
+  .page-header p { font-size:12px; }
+  .ctab { padding:5px 12px; font-size:11px; }
+  .course-tabs { gap:4px; }
+  .stu-table th, .stu-table td { padding:10px 12px; font-size:11px; }
+  .stu-table table { min-width:550px; }
+  .class-card { padding:14px 16px; border-radius:12px; }
+  .class-card h3 { font-size:14px; }
+  .class-card p { font-size:11px; }
+  .class-list { grid-template-columns:1fr; }
+  .btn-new { padding:9px 16px; font-size:12px; }
+  .btn-add-s { padding:5px 12px; font-size:11px; }
+  .add-form { padding:14px 12px; border-radius:16px; }
+  .add-form h3 { font-size:14px; }
+  .form-group label { font-size:10px; }
+  .form-group input { padding:7px 10px; font-size:11px; border-radius:10px; }
+  .fa-submit, .fa-cancel { padding:8px 16px; font-size:12px; }
+  .ab { padding:4px 8px; font-size:10px; }
+  .cic-btn { padding:6px 14px; font-size:11px; }
+  .sect-row h3 { font-size:14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">Spark<em>AI</em></div>
+  <div class="sb-nav">
+    <div class="sb-section">主菜单</div>
+    <a class="sb-item" href="teacher-home.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg></span>我的课程
+    </a>
+    <a class="sb-item active" href="teacher-class.html">
+      <span class="icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/><circle cx="12.5" cy="5.5" r="2"/><path d="M15 14c0-2.2-1.4-3.6-3-4"/></svg></span>班级管理
+    </a>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-avatar">王</div>
+    <div>
+      <div class="sb-uname">王老师</div>
+      <div class="sb-role">机构教师</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="page-header">
+    <div>
+      <h1>班级管理</h1>
+      <p>管理课程、班级与学生信息</p>
+    </div>
+    <button class="btn-new" onclick="createClass()">＋ 新建班级</button>
+  </div>
+
+  <div class="course-tabs" id="courseTabs"></div>
+
+  <div class="course-info-card" id="courseInfoCard"></div>
+
+  <div class="sect-row">
+    <h3>班级列表</h3>
+  </div>
+  <div class="class-list" id="classList"></div>
+
+  <div class="add-form" id="addFormWrap">
+    <h3 id="addFormTitle">＋ 新增学生</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>学生姓名</label>
+        <input type="text" id="stuName" placeholder="例：张小明">
+      </div>
+      <div class="form-group">
+        <label>登录账号</label>
+        <input type="text" id="stuAccount" placeholder="例：xiaoming01">
+      </div>
+      <div class="form-group">
+        <label>初始密码</label>
+        <input type="text" id="stuPassword" placeholder="自动生成或自定义">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="fa-submit" id="faSubmitBtn" onclick="submitStudent()">确认添加</button>
+      <button class="fa-cancel" onclick="cancelStudentForm()">取消</button>
+    </div>
+  </div>
+
+  <div class="sect-row">
+    <h3>学生列表 <span style="font-size:13px;color:var(--muted);font-weight:600;" id="stuCountLabel">共 0 人</span></h3>
+    <button class="btn-add-s" onclick="showAddForm()">＋ 添加学生</button>
+  </div>
+  <div class="stu-table">
+    <table>
+      <thead>
+        <tr><th>学生</th><th>账号</th><th>密码</th><th>状态</th><th>操作</th></tr>
+      </thead>
+      <tbody id="stuTbody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+/* ── Data migration: sparkai_classes_v2 → sparkai_classes ── */
+(function() {
+  if (localStorage.getItem('_sparkai_migrated')) return;
+  try {
+    var v2Raw = localStorage.getItem('sparkai_classes_v2');
+    if (!v2Raw) { localStorage.setItem('_sparkai_migrated', '1'); return; }
+    var v2Data = JSON.parse(v2Raw);
+    var classes = JSON.parse(localStorage.getItem('sparkai_classes') || '[]');
+    var courseData = JSON.parse(localStorage.getItem('sparkai_courses') || '[]');
+
+    var nameToId = {};
+    for (var i = 0; i < courseData.length; i++) { nameToId[courseData[i].name] = courseData[i].id; }
+
+    var existNames = {};
+    for (var j = 0; j < classes.length; j++) { existNames[classes[j].name] = true; }
+
+    for (var ci = 0; ci < v2Data.length; ci++) {
+      var v2c = v2Data[ci];
+      var cid = nameToId[v2c.name];
+      if (!cid) continue;
+      for (var cli = 0; cli < v2c.classes.length; cli++) {
+        var v2cl = v2c.classes[cli];
+        if (existNames[v2cl.name]) {
+          for (var ek = 0; ek < classes.length; ek++) {
+            if (classes[ek].name === v2cl.name && classes[ek].boundCourses.indexOf(cid) === -1) {
+              classes[ek].boundCourses.push(cid);
+            }
+          }
+        } else {
+          classes.push({
+            id: 'class-' + (classes.length + 1),
+            name: v2cl.name,
+            createdAt: v2cl.createdAt,
+            boundCourses: [cid],
+            students: v2cl.students || []
+          });
+          existNames[v2cl.name] = true;
+        }
+      }
+    }
+    localStorage.setItem('sparkai_classes', JSON.stringify(classes));
+    localStorage.removeItem('sparkai_classes_v2');
+  } catch(e) {}
+  localStorage.setItem('_sparkai_migrated', '1');
+})();
+</script>
+<script src="api.js"></script>
+<script>
+var avatars = ['🐼','🐯','🐸','🐰','🦊','🐨','🐶','🐱','🐻','🐮','🐷','🐔','🐧','🐤','🦄','🐙'];
+var colors = ['#B6EDFF','#F8FCAA','#FFE4E4','#E8DCFF','#D4F8E8','#FFF3CC','#FFD6E8','#C8F2FF'];
+
+var courses = [];
+var allClasses = [];
+var currentStudents = [];
+var curCourseIdx = 0;
+var curClassId = null;
+var editStudentIdx = -1;
+
+function getCourseClasses() {
+  var course = courses[curCourseIdx];
+  if (!course) return [];
+  return allClasses.filter(function(c) {
+    return c.boundCourses.indexOf(course.id) !== -1;
+  });
+}
+
+function getCurClass() {
+  var cc = getCourseClasses();
+  for (var i = 0; i < cc.length; i++) {
+    if (cc[i].id === curClassId) return cc[i];
+  }
+  return cc.length > 0 ? cc[0] : null;
+}
+
+/* ── Render ── */
+function renderCourseTabs() {
+  var html = '';
+  for (var i = 0; i < courses.length; i++) {
+    html += '<div class="ctab' + (i === curCourseIdx ? ' active' : '') + '" onclick="switchCourse(' + i + ')">' + courses[i].name + '</div>';
+  }
+  document.getElementById('courseTabs').innerHTML = html;
+}
+
+function renderCourseInfo() {
+  var course = courses[curCourseIdx];
+  if (!course) return;
+  var cc = getCourseClasses();
+  var totalStudents = 0;
+  for (var i = 0; i < cc.length; i++) { totalStudents += cc[i].studentCount; }
+  var html = '';
+  html += '<div class="cic-left"><h2>' + course.name + '</h2>';
+  html += '<div class="cic-stats"><span>📚 ' + (course.category || '') + ' · ' + course.totalLessons + ' 课时</span><span>🏫 ' + cc.length + ' 个班级</span><span>👤 ' + totalStudents + ' 名学生</span></div>';
+  html += '</div>';
+  html += '<div class="cic-right"><button class="cic-btn" onclick="addClass()">＋ 添加班级</button></div>';
+  document.getElementById('courseInfoCard').innerHTML = html;
+}
+
+function renderClassList() {
+  var cc = getCourseClasses();
+  if (cc.length === 0) {
+    document.getElementById('classList').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#CCC;padding:24px;">该课程暂无班级</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < cc.length; i++) {
+    var cls = cc[i];
+    html += '<div class="class-card' + (cls.id === curClassId ? ' active' : '') + '" onclick="switchClass(\'' + cls.id + '\')">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+    html += '<div><h3>' + cls.name + '</h3><p>创建于 ' + cls.createdAt + '</p><span class="class-badge">' + cls.studentCount + ' 名学生</span></div>';
+    html += '<div class="action-btns" style="flex-shrink:0;" onclick="event.stopPropagation();">';
+    html += '<button class="ab" onclick="editClass(\'' + cls.id + '\')">编辑</button>';
+    html += '<button class="ab del" onclick="deleteClass(\'' + cls.id + '\')">删除</button>';
+    html += '</div></div></div>';
+  }
+  document.getElementById('classList').innerHTML = html;
+}
+
+function renderStudentTable() {
+  if (!curClassId || currentStudents.length === 0) {
+    document.getElementById('stuTbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#CCC;font-size:13px;padding:24px;">该班级暂无学生</td></tr>';
+    document.getElementById('stuCountLabel').textContent = '共 0 人';
+    return;
+  }
+  var cls = getCurClass();
+  var clsName = cls ? cls.name : '';
+  var html = '';
+  for (var i = 0; i < currentStudents.length; i++) {
+    var s = currentStudents[i];
+    var bg = colors[i % colors.length];
+    html += '<tr>';
+    html += '<td><div class="stu-name-cell"><div class="stu-av" style="background:' + bg + ';">' + (s.avatar || '👤') + '</div><div><div class="stu-av-name">' + s.name + '</div><div class="stu-av-class">' + clsName + '</div></div></div></td>';
+    html += '<td><span class="code-pill">' + (s.account || '') + '</span></td>';
+    html += '<td><span class="code-pill">' + (s.password || '') + '</span></td>';
+    html += '<td><span class="status-dot">' + (s.active ? '<span class="dot-green"></span>已登录' : '<span class="dot-gray"></span>未登录') + '</span></td>';
+    html += '<td><div class="action-btns">';
+    html += '<button class="ab" onclick="editStudent(' + i + ')">编辑</button>';
+    html += '<button class="ab" onclick="resetPassword(' + i + ')">重置密码</button>';
+    html += '<button class="ab del" onclick="deleteStudent(' + i + ')">删除</button>';
+    html += '</div></td></tr>';
+  }
+  document.getElementById('stuTbody').innerHTML = html;
+  document.getElementById('stuCountLabel').textContent = '共 ' + currentStudents.length + ' 人';
+}
+
+function renderAll() { renderCourseTabs(); renderCourseInfo(); renderClassList(); renderStudentTable(); }
+
+/* ── Switching ── */
+function switchCourse(idx) {
+  curCourseIdx = idx;
+  var cc = getCourseClasses();
+  curClassId = cc.length > 0 ? cc[0].id : null;
+  editStudentIdx = -1;
+  cancelStudentForm();
+  loadStudentsAndRender();
+}
+
+function switchClass(classId) {
+  curClassId = classId;
+  editStudentIdx = -1;
+  cancelStudentForm();
+  loadStudentsAndRender();
+}
+
+function loadStudentsAndRender() {
+  if (!curClassId) { currentStudents = []; renderAll(); return; }
+  if (typeof SparkAPI === 'undefined') { renderAll(); return; }
+  SparkAPI.getStudents(curClassId).then(function(data) {
+    currentStudents = data;
+    renderAll();
+  }).catch(function() {
+    currentStudents = [];
+    renderAll();
+  });
+}
+
+/* ── Class CRUD ── */
+async function createClass() {
+  var name = prompt('请输入新班级名称：');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  var course = courses[curCourseIdx];
+  if (!course) return;
+  try {
+    var nc = await SparkAPI.createClass(name);
+    await SparkAPI.bindCourse(nc.id, course.id);
+    allClasses = await SparkAPI.getClasses();
+    curClassId = nc.id;
+    currentStudents = [];
+  } catch(e) { alert('创建班级失败'); return; }
+  renderAll();
+}
+
+async function editClass(classId) {
+  var cls = null;
+  for (var i = 0; i < allClasses.length; i++) { if (allClasses[i].id === classId) { cls = allClasses[i]; break; } }
+  if (!cls) return;
+  var name = prompt('修改班级名称：', cls.name);
+  if (!name || !name.trim()) return;
+  try {
+    await SparkAPI.updateClass(classId, { name: name.trim() });
+    allClasses = await SparkAPI.getClasses();
+  } catch(e) { alert('修改失败'); return; }
+  renderAll();
+}
+
+async function deleteClass(classId) {
+  var cls = null;
+  for (var i = 0; i < allClasses.length; i++) { if (allClasses[i].id === classId) { cls = allClasses[i]; break; } }
+  if (!cls) return;
+  if (!confirm('确定删除「' + cls.name + '」吗？所有学生数据将被清除。')) return;
+  try {
+    await SparkAPI.deleteClass(classId);
+    allClasses = await SparkAPI.getClasses();
+    var cc = getCourseClasses();
+    if (curClassId === classId) {
+      curClassId = cc.length > 0 ? cc[0].id : null;
+      if (!curClassId) currentStudents = [];
+    }
+  } catch(e) { alert('删除失败'); return; }
+  renderAll();
+}
+
+async function addClass() {
+  var name = prompt('为「' + courses[curCourseIdx].name + '」添加新班级：');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  var course = courses[curCourseIdx];
+  try {
+    var nc = await SparkAPI.createClass(name);
+    await SparkAPI.bindCourse(nc.id, course.id);
+    allClasses = await SparkAPI.getClasses();
+    curClassId = nc.id;
+    currentStudents = [];
+  } catch(e) { alert('添加失败'); return; }
+  renderAll();
+}
+
+/* ── Student CRUD ── */
+function showAddForm() {
+  if (!curClassId) { alert('请先选择一个班级'); return; }
+  editStudentIdx = -1;
+  document.getElementById('addFormTitle').textContent = '＋ 新增学生';
+  document.getElementById('faSubmitBtn').textContent = '确认添加';
+  document.getElementById('stuName').value = '';
+  document.getElementById('stuAccount').value = '';
+  document.getElementById('stuPassword').value = '';
+  document.getElementById('addFormWrap').style.display = 'block';
+}
+
+function cancelStudentForm() {
+  document.getElementById('addFormWrap').style.display = 'none';
+  editStudentIdx = -1;
+}
+
+async function submitStudent() {
+  var name = document.getElementById('stuName').value.trim();
+  var account = document.getElementById('stuAccount').value.trim();
+  var password = document.getElementById('stuPassword').value.trim();
+  if (!name) { alert('请输入学生姓名'); return; }
+  if (!account) { alert('请输入登录账号'); return; }
+  if (!password) { password = 'Sp' + Math.random().toString(36).slice(2, 8); }
+  if (!curClassId) return;
+
+  try {
+    if (editStudentIdx >= 0) {
+      await SparkAPI.updateStudent(curClassId, editStudentIdx, { name: name, account: account, password: password });
+    } else {
+      await SparkAPI.addStudent(curClassId, { name: name, account: account, password: password });
+    }
+    allClasses = await SparkAPI.getClasses();
+    currentStudents = await SparkAPI.getStudents(curClassId);
+  } catch(e) { alert('操作失败'); return; }
+  cancelStudentForm();
+  renderAll();
+}
+
+async function editStudent(idx) {
+  if (idx < 0 || idx >= currentStudents.length) return;
+  var s = currentStudents[idx];
+  editStudentIdx = idx;
+  document.getElementById('addFormTitle').textContent = '编辑学生 · ' + s.name;
+  document.getElementById('faSubmitBtn').textContent = '保存修改';
+  document.getElementById('stuName').value = s.name || '';
+  document.getElementById('stuAccount').value = s.account || '';
+  document.getElementById('stuPassword').value = s.password || '';
+  document.getElementById('addFormWrap').style.display = 'block';
+  document.getElementById('addFormWrap').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteStudent(idx) {
+  if (idx < 0 || idx >= currentStudents.length) return;
+  var s = currentStudents[idx];
+  if (!confirm('确定删除「' + s.name + '」吗？')) return;
+  try {
+    await SparkAPI.deleteStudent(curClassId, idx);
+    allClasses = await SparkAPI.getClasses();
+    currentStudents = await SparkAPI.getStudents(curClassId);
+  } catch(e) { alert('删除失败'); return; }
+  renderAll();
+}
+
+async function resetPassword(idx) {
+  if (idx < 0 || idx >= currentStudents.length) return;
+  var s = currentStudents[idx];
+  var np = 'Sp' + Math.random().toString(36).slice(2, 8);
+  if (!confirm('重置「' + s.name + '」的密码？\n新密码：' + np)) return;
+  try {
+    await SparkAPI.updateStudent(curClassId, idx, { name: s.name, account: s.account, password: np });
+    currentStudents = await SparkAPI.getStudents(curClassId);
+  } catch(e) { alert('重置失败'); return; }
+  renderAll();
+}
+
+/* ── Init ── */
+cancelStudentForm();
+
+if (typeof SparkAPI !== 'undefined') {
+  Promise.all([SparkAPI.getAllCourses(), SparkAPI.getClasses()]).then(function(results) {
+    courses = results[0];
+    allClasses = results[1];
+    var cc = getCourseClasses();
+    if (cc.length > 0) {
+      curClassId = cc[0].id;
+      return SparkAPI.getStudents(curClassId);
+    }
+  }).then(function(students) {
+    if (students) currentStudents = students;
+    renderAll();
+  }).catch(function() {
+    renderAll();
+  });
+} else {
+  renderAll();
+}
+</script>
+
+<script>
+/* ── Login guard ── */
+(function() {
+  if (localStorage.getItem("sparkai_role") !== "teacher") {
+    location.href = "login.html?role=teacher";
+  }
+  var sbFoot = document.querySelector(".sb-foot");
+  if (sbFoot) {
+    sbFoot.style.cursor = "pointer";
+    sbFoot.addEventListener("click", function(e) {
+      localStorage.removeItem("sparkai_role");
+      localStorage.removeItem("sparkai_user");
+      localStorage.removeItem("sparkai_session");
+      location.href = "style-final.html";
+    });
+  }
+})();
+</script>
+</body>
+</html>
